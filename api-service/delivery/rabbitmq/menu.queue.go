@@ -3,8 +3,9 @@ package rabbitmq
 import (
 	"encoding/json"
 	"log"
-	service "telegram-service/lib/menus"
-	"telegram-service/utils"
+
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/menus"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/streadway/amqp"
 )

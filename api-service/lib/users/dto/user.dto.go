@@ -2,7 +2,8 @@ package dto
 
 import (
 	"errors"
-	models "telegram-service/lib/users/models"
+
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/users/models"
 )
 
 // UserUpdateDTO is a struct for updating a user

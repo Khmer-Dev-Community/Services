@@ -6,10 +6,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	redis "telegram-service/config"
-	users "telegram-service/lib/users/models"
-	utils "telegram-service/utils"
 	"time"
+
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
+	users "github.com/Khmer-Dev-Community/Services/api-service/lib/users/models"
+	utils "github.com/Khmer-Dev-Community/Services/api-service/utils"
 )
 
 type AuthController struct {

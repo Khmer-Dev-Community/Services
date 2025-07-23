@@ -5,24 +5,22 @@ import (
 	"log"
 	"time"
 
-	"telegram-service/config"
-	"telegram-service/utils"
+	"github.com/Khmer-Dev-Community/Services/api-service/config"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"gorm.io/gorm"
 )
 
 var whitelist = map[string]bool{
-	"/forward":                                 true,
-	"/forward/":                                true,
-	"/api/auth/login":                          true,
-	"/api/auth/logout":                         true,
-	"/api/video/videosnap":                     true,
-	"/api/video/videostop":                     true,
-	"/api/metric/query":                        true,
-	"/api/metric/exportquery":                  true,
-	"/api/metric/namespace":                    true,
-	"/api/metric/namespace/sub":                true,
-	"/api/v1/items/list":                       true,
+
+	"/api/auth/login":             true,
+	"/api/auth/logout":            true,
+	"/api/auth02/register":        true,
+	"/api/auth02/login":           true,
+	"/api/auth02/github/login":    true,
+	"/api/auth02/github/callback": true,
+	"/api/auth02/profile":         true,
+
 	"/api/swagger/index.html":                  true,
 	"/swagger/index.html":                      true,
 	"/swagger/swagger-ui-bundle.js":            true,

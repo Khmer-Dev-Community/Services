@@ -3,11 +3,12 @@ package permission
 import (
 	"fmt"
 	"log"
-	dto "telegram-service/lib/permission/dto"
-	models "telegram-service/lib/permission/model"
-	role "telegram-service/lib/roles/models"
-	"telegram-service/utils"
 	"time"
+
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/dto"
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/model"
+	role "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/models"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"gorm.io/gorm"
 )

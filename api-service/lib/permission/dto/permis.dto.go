@@ -1,7 +1,7 @@
 package permission
 
 import (
-	models "telegram-service/lib/permission/model"
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/model"
 )
 
 type PermissionDTO struct {

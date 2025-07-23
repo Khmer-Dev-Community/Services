@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	dto "telegram-service/lib/roles/dto"
-	"telegram-service/lib/roles/repository"
-	"telegram-service/utils"
+
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/dto"
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/roles/repository"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/sirupsen/logrus"
 )

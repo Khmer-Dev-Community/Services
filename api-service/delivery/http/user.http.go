@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strconv"
 
-	//service "telegram-service/http/services"
-	dto "telegram-service/lib/users/dto"
-	service "telegram-service/lib/users/services"
-	"telegram-service/utils"
+	//service "github.com/Khmer-Dev-Community/Services/api-service/http/services"
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/users/dto"
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/users/services"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/gorilla/mux"
 )

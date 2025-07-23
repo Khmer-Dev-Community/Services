@@ -1,9 +1,9 @@
 package router
 
 import (
-	_ "telegram-service/cmd/docs"
-	controllers "telegram-service/delivery/http"
-	services "telegram-service/lib/users/services"
+	_ "github.com/Khmer-Dev-Community/Services/api-service/cmd/docs"
+	controllers "github.com/Khmer-Dev-Community/Services/api-service/delivery/http"
+	services "github.com/Khmer-Dev-Community/Services/api-service/lib/users/services"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"

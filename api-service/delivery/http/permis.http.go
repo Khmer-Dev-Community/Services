@@ -6,10 +6,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	service "telegram-service/lib/permission/service"
 
-	dto "telegram-service/lib/permission/dto"
-	"telegram-service/utils"
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/service"
+
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/dto"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/gorilla/mux"
 )

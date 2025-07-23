@@ -2,7 +2,8 @@ package middleware
 
 import (
 	"net/http"
-	"telegram-service/utils"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 )
 
 func LoggingMiddleware(next http.Handler) http.Handler {

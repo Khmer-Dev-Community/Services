@@ -3,7 +3,8 @@ package auth
 
 import (
 	"errors"
-	user "telegram-service/lib/users/models"
+
+	user "github.com/Khmer-Dev-Community/Services/api-service/lib/users/models"
 
 	"gorm.io/gorm"
 )

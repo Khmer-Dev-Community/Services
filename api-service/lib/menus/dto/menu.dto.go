@@ -1,8 +1,9 @@
 package menus
 
 import (
-	models "telegram-service/lib/menus/model"
 	"time"
+
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/menus/model"
 )
 
 type MenuDTO struct {

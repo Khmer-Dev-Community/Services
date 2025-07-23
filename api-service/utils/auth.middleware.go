@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	redis "telegram-service/config"
+
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
 
 	"strconv"
 	"sync"

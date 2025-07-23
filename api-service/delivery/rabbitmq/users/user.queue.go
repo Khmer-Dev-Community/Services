@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"telegram-service/delivery/rabbitmq"
-	"telegram-service/lib/users/dto"
-	service "telegram-service/lib/users/services"
-	"telegram-service/utils"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/delivery/rabbitmq"
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/users/dto"
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/users/services"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/streadway/amqp"
 )

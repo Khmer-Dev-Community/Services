@@ -1,15 +1,15 @@
 x-common-variables: &common-env
   TAG: 20241004-UAT-01
-  REGISTRY: registry.gitlab.com/infor-group/infor-services
+  REGISTRY: ghcr.io/Khmer-Dev-Community/Services
 
 services:
   nginx:
     image: nginx:alpine
-    container_name: nginx-proxy
+    container_name: kdc-nginx-proxy
     environment:
       - TZ=Asia/Phnom_Penh
     ports:
-      - "80:80"
+      - "3000:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
@@ -22,10 +22,10 @@ services:
     build:
       context: ./api-service
     platform: linux/amd64
-    image: "${REGISTRY}/api-service:${TAG}"
+    image: "${REGISTRY}/kdc-api-service:${TAG}"
     restart: always
-    hostname: api-service
-    container_name: api-service
+    hostname: kdc-api-service
+    container_name: kdc-api-service
     environment:
       - TZ=Asia/Phnom_Penh
     volumes:
@@ -34,6 +34,9 @@ services:
       - app-network
     ports:
       - "80"
+    depends_on:
+      - redis
+      - postgres
 
   upload-service:
     build:
@@ -41,22 +44,25 @@ services:
     platform: linux/amd64
     image: "${REGISTRY}/upload-service:${TAG}"
     restart: always
-    hostname: upload-service
-    container_name: upload-service
+    hostname: kdc-upload-service
+    container_name: kdc-upload-service
     environment:
       - TZ=Asia/Phnom_Penh
     volumes:
       - ./config.yml:/app/config/config.yml
     networks:
       - app-network
+    depends_on:
+      - redis
+      - postgres
   websocket-service:
     build:
       context: ./websocket-service
     platform: linux/amd64
-    image: "${REGISTRY}/websocket-service:${TAG}"
+    image: "${REGISTRY}/kdc-websocket-service:${TAG}"
     restart: always
-    hostname: websocket-service
-    container_name: websocket-service
+    hostname: kdc-websocket-service
+    container_name: kdc-websocket-service
     environment:
       - TZ=Asia/Phnom_Penh
     volumes:
@@ -65,6 +71,38 @@ services:
       - 8000:80
     networks:
       - app-network
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    hostname: redis-server
+    restart: always
+    environment:
+      - TZ=Asia/Phnom_Penh
+    ports:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    hostname: database-server
+    restart: always
+    environment:
+      - POSTGRES_DB=kdc_database
+      - POSTGRES_USER=kdc_user
+      - POSTGRES_PASSWORD=kdc123456
+      - TZ=Asia/Phnom_Penh
+    ports:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 networks:
   app-network:
     driver: bridge
+volumes:
+  postgres_data:
+  redis_data:

@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	redis "telegram-service/config"
-	dto "telegram-service/lib/permission/dto"
-	repository "telegram-service/lib/permission/repository"
-	"telegram-service/utils"
 	"time"
+
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/dto"
+	repository "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/repository"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/sirupsen/logrus"
 )

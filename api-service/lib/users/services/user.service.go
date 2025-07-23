@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"telegram-service/lib/users/dto"
-	"telegram-service/lib/users/repository"
-	"telegram-service/utils"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/users/dto"
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/users/repository"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/sirupsen/logrus"
 )

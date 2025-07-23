@@ -1,15 +1,15 @@
 database:
-  host: 127.0.0.1
-  username: postgres
-  password: GzWNAAfEwAtnBSnb
-  name: db_enterprise
+  host: postgres
+  username: kdc_user
+  password: kdc123456
+  name: kdc_database
   port: 5432
   driver: postgres
 
 redis:
-  host: 127.0.0.1
+  host: redis
   port: 6379
-  password: redis@password
+  password:
 secret_key: uhbi49y823ry78923ijrgu803289u3ui23
 RabbitMQURL: "amqp://admin:admin@pwd@127.0.0.1:5672/"
 
@@ -46,3 +46,7 @@ telegram:
       token: "xxxxxxxx"
       groupId: -4624244064
       back_button: true
+github:
+  client_id: "Ov23liBVXaZ0bV6B43Ut"
+  client_secret: "28f9c091b494fc8bc1fd2b795c77be27b322f2c4"
+  client_redir: "http://localhost:3000/api/account/auth02/github/callback"

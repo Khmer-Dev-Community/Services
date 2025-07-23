@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	service "telegram-service/lib/menus"
-	dto "telegram-service/lib/menus/dto"
-	"telegram-service/utils"
+
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/menus"
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/menus/dto"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/gorilla/mux"
 )

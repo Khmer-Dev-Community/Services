@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	dto "telegram-service/lib/roles/dto"
-	service "telegram-service/lib/roles/services"
-	"telegram-service/utils"
+
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/dto"
+	service "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/services"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"github.com/gorilla/mux"
 )

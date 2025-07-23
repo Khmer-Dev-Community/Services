@@ -3,9 +3,10 @@ package repository
 import (
 	"fmt"
 	"log"
-	"telegram-service/lib/users/dto"
-	models "telegram-service/lib/users/models"
-	"telegram-service/utils"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/users/dto"
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/users/models"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"gorm.io/gorm"
 )

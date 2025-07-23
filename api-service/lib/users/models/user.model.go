@@ -3,8 +3,9 @@ package users
 
 import (
 	"encoding/json"
-	roles "telegram-service/lib/roles/models"
 	"time"
+
+	roles "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/models"
 
 	"gorm.io/gorm"
 )
@@ -30,6 +31,9 @@ type User struct {
 	CreatedAt    time.Time      `gorm:"column:created_at;autoCreateTime" json:"createdAt"`                            // Change pointer to time.Time
 	UpdatedAt    time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`                            // Change pointer to time.Time                          // Automatically set update time
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	// New fields for GitHub OAuth
+	GitHubID  *string `json:"github_id,omitempty" gorm:"column:github_id;uniqueIndex"` // Make it nullable, add unique index
+	AvatarURL *string `json:"avatar_url,omitempty" gorm:"column:avatar_url"`           // Make it nullable
 }
 
 func (User) TableName() string {

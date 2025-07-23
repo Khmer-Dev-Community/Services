@@ -3,7 +3,8 @@ package utils
 import (
 	"fmt"
 	"log"
-	"telegram-service/config"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/config"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"

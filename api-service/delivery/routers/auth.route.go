@@ -1,8 +1,8 @@
 package router
 
 import (
-	controllers "telegram-service/auth"
-	services "telegram-service/auth"
+	controllers "github.com/Khmer-Dev-Community/Services/api-service/auth"
+	services "github.com/Khmer-Dev-Community/Services/api-service/auth"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"

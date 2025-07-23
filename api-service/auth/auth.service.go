@@ -4,8 +4,9 @@ package auth
 import (
 	"errors"
 	"fmt"
-	user "telegram-service/lib/users/models"
 	"time"
+
+	user "github.com/Khmer-Dev-Community/Services/api-service/lib/users/models"
 
 	"github.com/golang-jwt/jwt/v4"
 )

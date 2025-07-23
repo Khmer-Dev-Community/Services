@@ -86,7 +86,7 @@ func main() {
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 	r.Use(utils.AuthMiddlewareWithWhiteList(whitelist))
 
-	log.Println("      \n                   *       \n.         *        *        *\n.        ***     **=**     ***\n        *\"\"\"*   *|***|*   *\"\"\"*\n       *|***|*  *|*+*|*  *|***|*\n**********\"\"\"*___*//+\\\\*___*\"\"\"*********\n@@@@@@@@@@@@@@@@//   \\\\@@@@@@@@@@@@@@@@@\n###############||ព្រះពុទ្ធ||#################\nTTTTTTTTTTTTTTT||ព្រះធម័||TTTTTTTTTTTTTTTTT\n------------- -//ព្រះសង្ឃ\\\\----------------\n៚ សូមប្រោសប្រទានពរឱ្យប្រតិប័ត្តិការណ៍ប្រព្រឹត្តទៅជាធម្មតា ៚ \n ៚ ជោគជ័យ      ៚សិរីសួរស្តី       ៚សុវត្តិភាព \n_________________________________________\n៚  Application Service is Running Port: " + cfg.Service.Port)
+	log.Println("      \n                   *       \n.         *       *A*       *\n.        *A*     **=**     *A*\n        *\"\"\"*   *|\"\"\"|*   *\"\"\"*\n       *|***|*  *|*+*|*  *|***|*\n*********\"\"\"*___*//+\\\\*___*\"\"\"*********\n@@@@@@@@@@@@@@@@//   \\\\@@@@@@@@@@@@@@@@@\n###############||ព្រះពុទ្ធ||#################\nTTTTTTTTTTTTTTT||ព្រះធម័||TTTTTTTTTTTTTTTTT\nLLLLLLLLLLLLLL//ព្រះសង្ឃ\\\\LLLLLLLLLLLLLLLLL\n៚ សូមប្រោសប្រទានពរឱ្យប្រតិប័ត្តិការណ៍ប្រព្រឹត្តទៅជាធម្មតា ៚ \n៚ ជោគជ័យ   //  ៚សិរីសួរស្តី \\\\   ៚សុវត្តិភាព \n___________//___៚(♨️)៚__\\\\____________\n៚Application Service is Running Port: 80 ")
 	log.Fatal(http.ListenAndServe(":"+cfg.Service.Port, handler))
 	select {}
 }

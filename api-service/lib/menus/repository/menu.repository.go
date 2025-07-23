@@ -2,9 +2,10 @@ package menus
 
 import (
 	"log"
-	dto "telegram-service/lib/menus/dto"
-	models "telegram-service/lib/menus/model"
-	"telegram-service/utils"
+
+	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/menus/dto"
+	models "github.com/Khmer-Dev-Community/Services/api-service/lib/menus/model"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"gorm.io/gorm"
 )

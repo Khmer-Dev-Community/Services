@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	redis "telegram-service/config"
-	models "telegram-service/http/handler/users"
-	"telegram-service/utils"
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
+	models "github.com/Khmer-Dev-Community/Services/api-service/http/handler/users"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
