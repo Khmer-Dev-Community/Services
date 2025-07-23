@@ -1,0 +1,48 @@
+database:
+  host: 127.0.0.1
+  username: postgres
+  password: GzWNAAfEwAtnBSnb
+  name: db_enterprise
+  port: 5432
+  driver: postgres
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: redis@password
+secret_key: uhbi49y823ry78923ijrgu803289u3ui23
+RabbitMQURL: "amqp://admin:admin@pwd@127.0.0.1:5672/"
+
+service:
+  port: 80
+  timeZone: "Asia/Phnom_Penh"
+  logPtah: "logs/service-snap.log"
+  http: true
+  rabbitmq: false
+  grcp: false
+
+minio:
+  Endpoint: "localhost:9000"
+  AccessKeyID: "LDkJvmxsLZVg0PgbX1an"
+  SecretAccessKey: "u24eGV04RcwPVss8iJ6GzTaunV867dwBwUxGf5qt"
+  UseSSL: false
+  MaxFileSize: 25485760 # 25MB
+  Domain: "http://localhost:9000"
+
+telegram:
+  status: true
+  account:
+    - name: "Khdev"
+      status: false
+      apiHash: "xxxxx"
+      appID: 123456789
+      phoneNumber: "+855"
+      sessionFile: "/app/session/myaccount.session"
+
+  bots:
+    - name: "Khdev_bot"
+      status: false
+      debug: false
+      token: "xxxxxxxx"
+      groupId: -4624244064
+      back_button: true

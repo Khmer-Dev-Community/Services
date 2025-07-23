@@ -1,0 +1,70 @@
+x-common-variables: &common-env
+  TAG: 20241004-UAT-01
+  REGISTRY: registry.gitlab.com/infor-group/infor-services
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    environment:
+      - TZ=Asia/Phnom_Penh
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api-service
+      - upload-service
+    networks:
+      - app-network
+
+  api-service:
+    build:
+      context: ./api-service
+    platform: linux/amd64
+    image: "${REGISTRY}/api-service:${TAG}"
+    restart: always
+    hostname: api-service
+    container_name: api-service
+    environment:
+      - TZ=Asia/Phnom_Penh
+    volumes:
+      - ./config.yml:/app/config/config.yml
+    networks:
+      - app-network
+    ports:
+      - "80"
+
+  upload-service:
+    build:
+      context: ./upload-service
+    platform: linux/amd64
+    image: "${REGISTRY}/upload-service:${TAG}"
+    restart: always
+    hostname: upload-service
+    container_name: upload-service
+    environment:
+      - TZ=Asia/Phnom_Penh
+    volumes:
+      - ./config.yml:/app/config/config.yml
+    networks:
+      - app-network
+  websocket-service:
+    build:
+      context: ./websocket-service
+    platform: linux/amd64
+    image: "${REGISTRY}/websocket-service:${TAG}"
+    restart: always
+    hostname: websocket-service
+    container_name: websocket-service
+    environment:
+      - TZ=Asia/Phnom_Penh
+    volumes:
+      - ./config.yml:/app/config/config.yml
+    ports:
+      - 8000:80
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,13 @@
+[
+    {
+        "type": "joinTable",
+        "content": "BA10"
+    },
+    {
+        "type": "sendMessageToRoom",
+        "content": {
+            "room": "BA01",
+            "message": "Hello, room1! This is a test message."
+        }
+    }
+]

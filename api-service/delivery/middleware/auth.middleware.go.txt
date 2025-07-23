@@ -1,0 +1,200 @@
+package middleware
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+	redis "telegram-service/config"
+	models "telegram-service/http/handler/users"
+	"telegram-service/utils"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+)
+
+var secretKey = []byte("ihuegrbnor7nou3hu3uh3uh3")
+
+func AuthMiddlewareWIthWhiteList100(whitelist map[string]bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Log the incoming request URL
+			log.Printf("Incoming request URL: %s", r.URL.Path)
+
+			if _, ok := whitelist[r.URL.Path]; ok {
+				// Log whitelisted routes
+				log.Printf("Whitelisted route: %s", r.URL.Path)
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check for the Authorization header
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				// Log missing Authorization header
+				log.Println("Authorization header is missing")
+				utils.RespondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
+				return
+			}
+
+			// Extract token from Authorization header
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			log.Printf("Token: %s", tokenString)
+
+			// Parse and validate token
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				// Log unexpected signing method
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					log.Printf("Unexpected signing method: %v", token.Header["alg"])
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return secretKey, nil
+			})
+			if err != nil || !token.Valid {
+				// Log invalid token
+				log.Println("Invalid token")
+				utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+				return
+			}
+
+			// Extract user ID from token claims
+			claims, ok := token.Claims.(jwt.MapClaims)
+			if !ok || !token.Valid {
+				// Log invalid token claims
+				log.Println("Invalid token claims")
+				utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token claims")
+				return
+			}
+			userID := claims["user_id"].(float64)
+			log.Printf("User ID: %v", userID)
+
+			// Retrieve user data from Redis
+			key := fmt.Sprintf("user:%d", int(userID))
+			userData, err := redis.Get(key)
+			if err != nil {
+				// Log token expiration or not found
+				log.Println("Token expired or not found")
+				utils.RespondWithError(w, http.StatusUnauthorized, "Token expired or not found")
+				return
+			}
+
+			// Refresh token expiration in Redis
+			expiration := time.Hour * 24 // 24 hours
+			err = redis.SetWithExpiration(key, json.RawMessage(userData), expiration)
+			if err != nil {
+				// Log failed to refresh token expiration
+				log.Println("Failed to refresh token expiration")
+				utils.RespondWithError(w, http.StatusInternalServerError, "Failed to refresh token expiration")
+				return
+			}
+
+			// Log successful token validation
+			log.Println("Token validation successful")
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, ok := whitelist[r.URL.Path]; ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				utils.RespondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
+				return
+			}
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			log.Printf("Token: %s", tokenString)
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				// Validate the signing method
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return []byte(secretKey), nil
+			})
+			if err != nil {
+				log.Printf("Error parsing token: %v", err)
+				utils.RespondWithError(w, http.StatusBadRequest, "Invalid token format")
+				return
+			}
+
+			if !token.Valid {
+
+				utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+				return
+			}
+
+			claims, ok := token.Claims.(jwt.MapClaims)
+			if !ok {
+				utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token claims")
+				return
+			}
+			userID := int(claims["id"].(float64))
+			userData, err := redis.Get(fmt.Sprintf("user:%d", userID))
+			log.Printf("Token data  %v", claims)
+			if err != nil {
+				utils.RespondWithError(w, http.StatusUnauthorized, "Token expired or not found")
+				return
+			}
+			var user models.UserDTO
+			if err := json.Unmarshal([]byte(userData), &user); err != nil {
+				// Handle error if unable to decode JSON
+				utils.RespondWithError(w, http.StatusInternalServerError, "Failed to decode user data")
+				return
+			}
+
+			key := fmt.Sprintf("user:%d", userID)
+			expiration := time.Minute * 30
+			if err := redis.UpdateExpiration(key, expiration); err != nil {
+				utils.RespondWithError(w, http.StatusInternalServerError, "Failed to refresh token expiration")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+func decryptToken(tokenString string) (*models.UserDTO, error) {
+	// Parse the JWT token
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Check the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		// Return the secret key to validate the token
+		return secretKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the token is valid
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	// Extract claims from the token
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	// Extract user information from claims
+	userID := int(claims["sub"].(float64)) // Assuming 'sub' claim contains the user ID
+	username := claims["username"].(string)
+	// Extract other user information as needed
+
+	// Create and return the user object
+	user := &models.UserDTO{
+		ID:       userID,
+		Username: username,
+		// Set other user properties here
+	}
+	return user, nil
+}

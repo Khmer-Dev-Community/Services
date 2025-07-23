@@ -1,0 +1,38 @@
+# Build stage
+FROM golang:1.24.3 AS builder
+
+WORKDIR /app
+
+# Copy go.mod and go.sum for dependency management
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the application source code
+COPY . .
+
+# Build the binary for Linux (amd64 architecture)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o telegram-service.bin ./cmd
+
+# Final stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache  tzdata
+
+# Set the timezone
+ENV TZ=Asia/Phnom_Penh
+RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Copy the binary and config from the build stage
+COPY --from=builder /app/telegram-service.bin .
+COPY --from=builder /app/config/config.yml /app/config/config.yml
+
+# Expose port 80
+EXPOSE 80
+
+# Run the binary
+CMD ["./telegram-service.bin"]
