@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
@@ -100,10 +101,27 @@ func (s *ClientAuthService) ClientLogin(credentials *userclient.ClientLoginReque
 }
 
 // GenerateToken generates an application token (e.g., JWT) for a given ClientUser.
-func (s *ClientAuthService) GenerateToken(user *userclient.ClientUser) (string, error) {
+func (s *ClientAuthService) GenerateToken_(user *userclient.ClientUser) (string, error) {
 	token := fmt.Sprintf("client_jwt_token_for_user_%d", user.ID) // Placeholder
 	utils.LoggerService(user.ID, fmt.Sprintf("Generated token for client user: %s", user.Username), logrus.InfoLevel)
 	return token, nil
+}
+
+func (s *ClientAuthService) GenerateToken(user *userclient.ClientUser) (string, error) {
+	claims := jwt.MapClaims{
+		"sub":      user.ID,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		"iat":      time.Now().Unix(),
+		"username": user.Username,
+		"id":       user.ID,
+	}
+	// Generate the token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte("ihuegrbnor7nou3hu3uh3uh3"))
+	if err != nil {
+		return "", errors.New("failed to generate token")
+	}
+	return tokenString, nil
 }
 
 // ExchangeGitHubCodeForToken exchanges the GitHub authorization code for an OAuth token.

@@ -21,8 +21,6 @@ var (
 		Scopes:       []string{"user:email"}, // Request email access
 		Endpoint:     githubOAuth.Endpoint,
 	}
-	// A random string to prevent CSRF attacks. Store this in a session or cookie.
-	// For simplicity, using a hardcoded string here, but in production, generate dynamically.
 	oauthStateString = "random-state-string"
 )
 
@@ -94,21 +92,8 @@ func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("GitHub User Data: %+v\n", githubUser)
 
-	// 4. (Crucial) Implement your application's user management logic:
-	//    a. Check if a user with this GitHub ID (githubUser["id"]) already exists in your database.
-	//    b. If yes, log them in (e.g., generate a JWT token for your frontend).
-	//    c. If no, create a new user account in your database using the data from GitHub (e.g., githubUser["login"] for username, githubUser["email"] if available and requested in scope).
-	//       Then log them in.
-
-	// Example: Redirect back to the frontend with some user info or a token
-	// In a real app, you'd generate a JWT here and redirect to your frontend with it.
-	// For now, let's just show success.
-	// Note: You need to configure CORS if your frontend is on a different origin.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "GitHub login successful!", "user_id": fmt.Sprintf("%v", githubUser["id"])})
 
-	// To redirect to Vue frontend after successful login:
-	// frontendRedirectURL := "http://localhost:8080/dashboard" // Or where your Vue app handles post-login
-	// http.Redirect(w, r, frontendRedirectURL, http.StatusTemporaryRedirect)
 }

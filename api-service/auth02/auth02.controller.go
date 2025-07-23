@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
 	clientauth_service "github.com/Khmer-Dev-Community/Services/api-service/lib/clientauth" // Aliased service import
 	"github.com/Khmer-Dev-Community/Services/api-service/lib/userclient"                    // Renamed package
 	"github.com/Khmer-Dev-Community/Services/api-service/pkg/oauth_config"                  // NEW IMPORT for shared OAuth types
@@ -214,6 +216,16 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 	response := ClientAuthResponse{                          // From auth02 package
 		Token: appToken,
 		User:  userResponse,
+	}
+
+	expiration := time.Hour * 24 // 1 nimutes
+	key := fmt.Sprintf("user:%d", user.ID)
+	user.Token = appToken
+
+	if err := redis.SetWithExpiration(key, response, expiration); err != nil {
+		utils.ErrorLog(err, "Failed Store User Infor in Redis")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to store user information in Redis")
+		return
 	}
 	frontendRedirectURL := fmt.Sprintf("http://localhost/?token=%s", appToken)
 	http.Redirect(w, r, frontendRedirectURL, http.StatusFound)
