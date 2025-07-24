@@ -101,12 +101,6 @@ func (s *ClientAuthService) ClientLogin(credentials *userclient.ClientLoginReque
 }
 
 // GenerateToken generates an application token (e.g., JWT) for a given ClientUser.
-func (s *ClientAuthService) GenerateToken_(user *userclient.ClientUser) (string, error) {
-	token := fmt.Sprintf("client_jwt_token_for_user_%d", user.ID) // Placeholder
-	utils.LoggerService(user.ID, fmt.Sprintf("Generated token for client user: %s", user.Username), logrus.InfoLevel)
-	return token, nil
-}
-
 func (s *ClientAuthService) GenerateToken(user *userclient.ClientUser) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":      user.ID,

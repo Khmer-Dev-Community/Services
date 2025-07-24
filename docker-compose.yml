@@ -3,21 +3,6 @@ x-common-variables: &common-env
   REGISTRY: ghcr.io/Khmer-Dev-Community/Services
 
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: kdc-nginx-proxy
-    environment:
-      - TZ=Asia/Phnom_Penh
-    ports:
-      - "3000:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - api-service
-      - upload-service
-    networks:
-      - app-network
-
   api-service:
     build:
       context: ./api-service
@@ -79,7 +64,7 @@ services:
     environment:
       - TZ=Asia/Phnom_Penh
     ports:
-      - "6379"
+      - "6397:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -95,9 +80,23 @@ services:
       - POSTGRES_PASSWORD=kdc123456
       - TZ=Asia/Phnom_Penh
     ports:
-      - "5432"
+      - "5423:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+  nginx:
+    image: nginx:alpine
+    container_name: kdc-nginx-proxy
+    environment:
+      - TZ=Asia/Phnom_Penh
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api-service
+      - upload-service
     networks:
       - app-network
 networks:

@@ -38,7 +38,6 @@ telegram:
       appID: 123456789
       phoneNumber: "+855"
       sessionFile: "/app/session/myaccount.session"
-
   bots:
     - name: "Khdev_bot"
       status: false

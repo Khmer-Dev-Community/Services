@@ -64,9 +64,7 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	expiration := time.Hour * 24 // 1 nimutes
 	key := fmt.Sprintf("user:%d", user.ID)
 	user.Token = token
-	//log.Printf("response %v ", response)
-	//log.Print("Redis Key ", key)
-	//log.Print("Redis expiration", expiration)
+
 	if err := redis.SetWithExpiration(key, response, expiration); err != nil {
 		utils.ErrorLog(err, "Failed Store User Infor in Redis")
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to store user information in Redis")

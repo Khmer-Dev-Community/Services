@@ -219,6 +219,7 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 	}
 
 	expiration := time.Hour * 24 // 1 nimutes
+	expirationTime := time.Now().Add(time.Hour * 24 * 7)
 	key := fmt.Sprintf("user:%d", user.ID)
 	user.Token = appToken
 
@@ -227,13 +228,24 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to store user information in Redis")
 		return
 	}
-	frontendRedirectURL := fmt.Sprintf("http://localhost/?token=%s", appToken)
-	http.Redirect(w, r, frontendRedirectURL, http.StatusFound)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		utils.ErrorLog(err, "Failed to encode response during GitHub callback")
+
+	cookie := http.Cookie{
+		Name:     "kdc.secure.token", // Name of your authentication cookie
+		Value:    appToken,           // The JWT you generated
+		Expires:  expirationTime,     // When the cookie expires
+		HttpOnly: true,               // Prevents client-side JavaScript access <-- CRITICAL FOR SECURITY
+		Secure:   r.TLS != nil,       // Only send over HTTPS in production <-- CRITICAL FOR SECURITY
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
 	}
+	http.SetCookie(w, &cookie)
+	frontendRedirectURL := "http://localhost"
+	http.Redirect(w, r, frontendRedirectURL, http.StatusFound)
+	//w.Header().Set("Content-Type", "application/json")
+	//w.WriteHeader(http.StatusOK)
+	//if err := json.NewEncoder(w).Encode(response); err != nil {
+	//	utils.ErrorLog(err, "Failed to encode response during GitHub callback")
+	//}
 	utils.LoggerRequest(userResponse.ID, "GitHub Callback", fmt.Sprintf("Client user logged in/registered via GitHub: %s", userResponse.Username))
 }
 
@@ -249,9 +261,7 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 // @Failure 500 {string} string "Internal server error"
 // @Router /client/profile [get]
 func (ctrl *ClientAuthController) GetClientProfile(w http.ResponseWriter, r *http.Request) {
-	// !!! IMPORTANT: This is a placeholder. You need to implement actual authentication
-	// and extract the userID from the authenticated user's context/token.
-	// For now, it's hardcoded to 1 for testing.
+
 	userID := uint(1)
 
 	userDTO, err := ctrl.clientAuthService.GetClientProfile(userID) // Returns userclient.ClientUserResponseDTO
