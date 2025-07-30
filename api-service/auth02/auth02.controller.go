@@ -178,57 +178,49 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if state != oauth_config.ClientOauthStateString { // Access from oauth_config package
+	if state != oauth_config.ClientOauthStateString {
 		utils.WarnLog(state, "GitHub callback: Invalid OAuth state parameter")
 		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
 		return
 	}
-
 	token, err := ctrl.clientAuthService.ExchangeGitHubCodeForToken(code)
 	if err != nil {
 		utils.ErrorLog(err, "GitHub callback: Failed to exchange code for token")
 		http.Error(w, "Failed to authenticate with GitHub", http.StatusInternalServerError)
 		return
 	}
-
 	githubUser, err := ctrl.clientAuthService.GetGitHubUserData(token.AccessToken) // Service returns oauth_config.GitHubUser
 	if err != nil {
 		utils.ErrorLog(err, "GitHub callback: Failed to get GitHub user data")
 		http.Error(w, "Failed to get user data from GitHub", http.StatusInternalServerError)
 		return
 	}
-
 	user, err := ctrl.clientAuthService.HandleGitHubLoginOrRegister(githubUser) // Service expects oauth_config.GitHubUser
 	if err != nil {
 		utils.ErrorLog(err, fmt.Sprintf("GitHub callback: Failed to handle login/register for GitHub user %s", githubUser.Login))
 		http.Error(w, "Failed to process GitHub login/registration", http.StatusInternalServerError)
 		return
 	}
-
 	appToken, err := ctrl.clientAuthService.GenerateToken(user)
 	if err != nil {
 		utils.ErrorLog(err, fmt.Sprintf("GitHub callback: Failed to generate app token for user %s", user.Username))
 		http.Error(w, "Failed to generate application token", http.StatusInternalServerError)
 		return
 	}
-
 	userResponse := userclient.ToClientUserResponseDTO(user) // Use userclient DTO
 	response := ClientAuthResponse{                          // From auth02 package
 		Token: appToken,
 		User:  userResponse,
 	}
-
 	expiration := time.Hour * 24 // 1 nimutes
 	expirationTime := time.Now().Add(time.Hour * 24 * 7)
 	key := fmt.Sprintf("user:%d", user.ID)
 	user.Token = appToken
-
 	if err := redis.SetWithExpiration(key, response, expiration); err != nil {
 		utils.ErrorLog(err, "Failed Store User Infor in Redis")
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to store user information in Redis")
 		return
 	}
-
 	cookie := http.Cookie{
 		Name:     "kdc.secure.token", // Name of your authentication cookie
 		Value:    appToken,           // The JWT you generated
@@ -239,13 +231,9 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 		Path:     "/",
 	}
 	http.SetCookie(w, &cookie)
-	frontendRedirectURL := "http://localhost"
+	frontendRedirectURL := "http://localhost/auth/callback"
 	http.Redirect(w, r, frontendRedirectURL, http.StatusFound)
-	//w.Header().Set("Content-Type", "application/json")
-	//w.WriteHeader(http.StatusOK)
-	//if err := json.NewEncoder(w).Encode(response); err != nil {
-	//	utils.ErrorLog(err, "Failed to encode response during GitHub callback")
-	//}
+
 	utils.LoggerRequest(userResponse.ID, "GitHub Callback", fmt.Sprintf("Client user logged in/registered via GitHub: %s", userResponse.Username))
 }
 
@@ -261,9 +249,7 @@ func (ctrl *ClientAuthController) GitHubCallback(w http.ResponseWriter, r *http.
 // @Failure 500 {string} string "Internal server error"
 // @Router /client/profile [get]
 func (ctrl *ClientAuthController) GetClientProfile(w http.ResponseWriter, r *http.Request) {
-
 	userID := uint(1)
-
 	userDTO, err := ctrl.clientAuthService.GetClientProfile(userID) // Returns userclient.ClientUserResponseDTO
 	if err != nil {
 		utils.ErrorLog(err, fmt.Sprintf("Failed to retrieve profile for client ID %d", userID))
@@ -274,7 +260,6 @@ func (ctrl *ClientAuthController) GetClientProfile(w http.ResponseWriter, r *htt
 		http.Error(w, "Failed to retrieve profile", http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(userDTO); err != nil {

@@ -44,6 +44,21 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 				next.ServeHTTP(w, r)
 				return
 			}
+			cookie, err := r.Cookie("kdc.secure.token")
+			if err != nil {
+				if err == http.ErrNoCookie {
+				} else {
+					RespondWithError(w, http.StatusUnauthorized, "Token expired or not found")
+					return
+				}
+			}
+			if cookie != nil {
+				jwtToken := cookie.Value
+				r.Header.Set("kdc-x-token", jwtToken)
+			} else {
+				RespondWithError(w, http.StatusUnauthorized, "User required login")
+				return
+			}
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				RespondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
@@ -58,6 +73,7 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 				RespondWithError(w, http.StatusUnauthorized, "Invalid token")
 				return
 			}
+
 			r.Header.Set("token-x-userid", fmt.Sprintf("%d", user.ID))
 			r.Header.Set("roleid", fmt.Sprintf("%d", user.RoleID))
 			r.Header.Set("companyid", fmt.Sprintf("%d", user.CompanyID))
