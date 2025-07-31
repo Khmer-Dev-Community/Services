@@ -44,9 +44,10 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 				next.ServeHTTP(w, r)
 				return
 			}
-			cookie, err := r.Cookie("kdc.secure.token")
-			if err != nil {
-				if err == http.ErrNoCookie {
+			var jwtToken = ""
+			cookie, errk := r.Cookie("kdc.secure.token")
+			if errk != nil {
+				if errk == http.ErrNoCookie {
 				} else {
 					RespondWithError(w, http.StatusUnauthorized, "Token expired or not found")
 					return
@@ -59,27 +60,31 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 				RespondWithError(w, http.StatusUnauthorized, "User required login")
 				return
 			}
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				RespondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
-				return
-			}
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			/*
+				authHeader := r.Header.Get("Authorization")
+				if authHeader == "" {
+					RespondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
+					return
+
+				}
+
+				tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			*/
 			// Declare the variable outside
 			var user *UserDTO
-			user, err := decryptToken(tokenString) // Use assignment instead of short declaration
+			user, err := decryptToken(jwtToken) // Use assignment instead of short declaration
 			if err != nil {
 				ErrorLog("Error decrypting token", err.Error())
-				RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+				RespondWithError(w, http.StatusNotFound, "Invalid token")
 				return
 			}
 
-			r.Header.Set("token-x-userid", fmt.Sprintf("%d", user.ID))
-			r.Header.Set("roleid", fmt.Sprintf("%d", user.RoleID))
-			r.Header.Set("companyid", fmt.Sprintf("%d", user.CompanyID))
+			//r.Header.Set("token-x-userid", fmt.Sprintf("%d", user.ID))
+			//r.Header.Set("roleid", fmt.Sprintf("%d", user.RoleID))
+			//r.Header.Set("companyid", fmt.Sprintf("%d", user.CompanyID))
 			// Append Body Data
 
-			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
 				// Validate the signing method
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					ErrorLog("Unexpected signing method", "Error")
@@ -89,17 +94,17 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 			})
 			if err != nil {
 				ErrorLog("Error parsing token", err.Error())
-				RespondWithError(w, http.StatusUnauthorized, "Invalid token format")
+				RespondWithError(w, http.StatusNotFound, "Invalid token format")
 				return
 			}
 			if !token.Valid {
 
-				RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+				RespondWithError(w, http.StatusNotFound, "Invalid token")
 				return
 			}
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
-				RespondWithError(w, http.StatusUnauthorized, "Invalid token claims")
+				RespondWithError(w, http.StatusNotFound, "Invalid token claims")
 				return
 			}
 
@@ -107,17 +112,16 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 			userData, err := redis.Get(fmt.Sprintf("user:%d", userID))
 
 			if err != nil {
-				RespondWithError(w, http.StatusUnauthorized, "Token expired or not found")
+				RespondWithError(w, http.StatusNotFound, "Token expired or not found")
 				return
 			}
 
 			if err := json.Unmarshal([]byte(userData), &user); err != nil {
-				// Handle error if unable to decode JSON
 				RespondWithError(w, http.StatusInternalServerError, "Failed to decode user data")
 				return
 			}
 			// check request token & redis token
-			if tokenString != user.Token {
+			if jwtToken != user.Token {
 				RespondWithError(w, http.StatusUnauthorized, "Your Account login on other device ")
 				return
 			}
@@ -135,20 +139,14 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) func(http.Handler) h
 					RespondWithError(w, http.StatusInternalServerError, "Failed to read request body")
 					return
 				}
-				defer r.Body.Close() // Close the original body
-
-				// Unmarshal the existing request body
+				defer r.Body.Close()
 				var requestBody map[string]interface{}
 				if err := json.Unmarshal(body, &requestBody); err != nil {
 					RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 					return
 				}
-
-				// Append companyId and userId to the request body
 				requestBody["companyId"] = user.CompanyID
 				requestBody["userId"] = user.ID
-
-				// Marshal the updated request body
 				updatedBody, err := json.Marshal(requestBody)
 				if err != nil {
 					RespondWithError(w, http.StatusInternalServerError, "Failed to marshal updated body")

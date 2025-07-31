@@ -20,7 +20,14 @@ type ClientUser struct {
 	Status      bool    `json:"status" gorm:"column:status;default:true"`
 	Token       string  `json:"token" gorm:"-"`
 	Description string  `json:"description" gorm:"column:description"`
-
+	// Follow
+	Follower  int `json:"follower" gorm:"column:follower"`
+	Following int `json:"following" gorm:"column:following"`
+	Likes     int `json:"likes" gorm:"column:likes"`
+	Posts     int `json:"posts" gorm:"column:posts"`
+	// Location
+	Location string    `json:"location" gorm:"column:location"`
+	JoinDate time.Time `json:"join_date" gorm:"column:join_date"`
 	// GitHub
 	GitHubID  *string `json:"github_id,omitempty" gorm:"column:github_id;uniqueIndex"`
 	AvatarURL *string `json:"avatar_url,omitempty" gorm:"column:avatar_url"`

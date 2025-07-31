@@ -93,7 +93,3 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.RespondWithJSON(w, http.StatusOK, "logout")
 }
-
-func (c *AuthController) GetPrfile(w http.ResponseWriter, r *http.Request) {
-	utils.RespondWithJSON(w, http.StatusOK, response)
-}
