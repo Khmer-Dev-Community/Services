@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +27,7 @@ func main() {
 	go func() {
 
 		log.Println("      \n                   *       \n.         *       *A*       *\n.        *A*     **=**     *A*\n        *\"\"\"*   *|\"\"\"|*   *\"\"\"*\n       *|***|*  *|*+*|*  *|***|*\n*********\"\"\"*___*//+\\\\*___*\"\"\"*********\n@@@@@@@@@@@@@@@@//   \\\\@@@@@@@@@@@@@@@@@\n###############||ព្រះពុទ្ធ||#################\nTTTTTTTTTTTTTTT||ព្រះធម័||TTTTTTTTTTTTTTTTT\nLLLLLLLLLLLLLL//ព្រះសង្ឃ\\\\LLLLLLLLLLLLLLLLL\n៚ សូមប្រោសប្រទានពរឱ្យប្រតិប័ត្តិការណ៍ប្រព្រឹត្តទៅជាធម្មតា ៚ \n៚ ជោគជ័យ   //  ៚សិរីសួរស្តី \\\\   ៚សុវត្តិភាព \n___________//___៚(♨️)៚__\\\\____________\n៚Application Service is Running Port: 80 ")
-		if err := StartHTTPServer(cfg.Service.Port, router.(http.Handler)); err != nil {
+		if err := StartHTTPServer(cfg.Service.Port, router); err != nil {
 			log.Fatalf("Server error: %v", err)
 		}
 		log.Printf("HTTP server successfully started on port %s", cfg.Service.Port)

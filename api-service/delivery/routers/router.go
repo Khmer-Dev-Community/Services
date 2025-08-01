@@ -1,12 +1,10 @@
 package router
 
 import (
-	_ "github.com/Khmer-Dev-Community/Services/api-service/cmd/docs"
+	// Your existing controller and service imports
 	controllers "github.com/Khmer-Dev-Community/Services/api-service/delivery/http"
 	services "github.com/Khmer-Dev-Community/Services/api-service/lib/users/services"
-
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/gin-gonic/gin"
 )
 
 // UserControllerWrapper is a wrapper for the user controller
@@ -21,25 +19,21 @@ func NewUserControllerWrapper(uc *controllers.UserController) *UserControllerWra
 	}
 }
 
-// SetupRouter initializes and configures the router
-func SetupRouter(r *mux.Router, userService *services.UserService) {
+func SetupRouter(r *gin.Engine, userService *services.UserService) { // Changed r to *gin.Engine
 	// Initialize UserController with UserService
 	userController := controllers.NewUserController(userService)
-
-	// Create a new instance of the wrapper for UserController
 	userControllerWrapper := NewUserControllerWrapper(userController)
+	api := r.Group("/api")            // Changed to Gin's Group method
+	userRouter := api.Group("/users") // Changed to Gin's Group method
 
-	// Define API routes
-	api := r.PathPrefix("/api").Subrouter()
-	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler())
+	// Define User routes using Gin's methods
+	userRouter.GET("/list", userControllerWrapper.userController.UserListHandler)        // GET /api/users/list
+	userRouter.GET("/list/:id", userControllerWrapper.userController.UserByIDHandler)    // GET /api/users/list/:id (Gin uses :id for path parameters)
+	userRouter.POST("/create", userControllerWrapper.userController.UserCreateHandler)   // POST /api/users/create
+	userRouter.PUT("/update", userControllerWrapper.userController.UserUpdateHandler)    // PUT /api/users/update
+	userRouter.DELETE("/delete", userControllerWrapper.userController.UserDeleteHandler) // DELETE /api/users/delete
+	userRouter.GET("/profile", userControllerWrapper.userController.UserProfileHandler)  // GET /api/users/profile
 
-	// User routes
-	userRouter := api.PathPrefix("/users").Subrouter()
-	userRouter.HandleFunc("/list", userControllerWrapper.userController.UserListHandler).Methods("GET")
-	userRouter.HandleFunc("/list/{id}", userControllerWrapper.userController.UserByIDHandler).Methods("GET")
-	userRouter.HandleFunc("/create", userControllerWrapper.userController.UserCreateHandler).Methods("POST")
-	userRouter.HandleFunc("/update", userControllerWrapper.userController.UserUpdateHandler).Methods("PUT")
-	userRouter.HandleFunc("/delete", userControllerWrapper.userController.UserDeleteHandler).Methods("DELETE")
-	userRouter.HandleFunc("/profile", userControllerWrapper.userController.UserProfileHandler).Methods("GET")
-
+	// The Swagger documentation setup should be in your main InitRoutes function, not here.
+	// r.PathPrefix("/swagger/").Handler(httpSwagger.Handler()) // REMOVED
 }

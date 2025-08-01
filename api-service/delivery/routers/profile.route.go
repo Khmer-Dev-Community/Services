@@ -25,12 +25,12 @@ func NewClientProfileControllerWrapper(cac *auth02.ClientAuthController) *Client
 
 func SetupRouterClientAuth(r *mux.Router, ClientProfileCtrl *auth02.ClientAuthController) { // <--- CHANGED SIGNATURE
 
-	ClientProfileControllerWrapper := NewClientProfileControllerWrapper(ClientProfileCtrl)
+	//ClientProfileControllerWrapper := NewClientProfileControllerWrapper(ClientProfileCtrl)
 	// Define API routes
-	api := r.PathPrefix("/api").Subrouter()
+	//api := r.PathPrefix("/api").Subrouter()
 
-	ClientProfileRouter := api.PathPrefix("/kdc").Subrouter()
-	ClientProfileRouter.HandleFunc("/profile", ClientProfileControllerWrapper.ClientProfileController.GetClientProfile).Methods("GET")
-	ClientProfileRouter.HandleFunc("/profile", ClientProfileControllerWrapper.ClientProfileController.UpdateClientProfile).Methods("PUT")
+	//ClientProfileRouter := api.PathPrefix("/kdc").Subrouter()
+	//ClientProfileRouter.HandleFunc("/profile", ClientProfileControllerWrapper.ClientProfileController.GetClientProfile).Methods("GET")
+	//ClientProfileRouter.HandleFunc("/profile", ClientProfileControllerWrapper.ClientProfileController.UpdateClientProfile).Methods("PUT")
 
 }

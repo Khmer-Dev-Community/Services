@@ -9,6 +9,7 @@ import (
 	menusRepo "github.com/Khmer-Dev-Community/Services/api-service/lib/menus/repository"
 	permissRepo "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/repository"
 	permissService "github.com/Khmer-Dev-Community/Services/api-service/lib/permission/service"
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/posts"
 	"github.com/Khmer-Dev-Community/Services/api-service/lib/roles/repository"
 	roleService "github.com/Khmer-Dev-Community/Services/api-service/lib/roles/services"
 	userclientRepo "github.com/Khmer-Dev-Community/Services/api-service/lib/userclient"
@@ -26,6 +27,7 @@ type Services struct {
 	Permission *permissService.PermissionService
 	Menu       *menuService.MenuService
 	Config     *config.Config
+	Posts      posts.PostService
 }
 
 func InitServices(db *gorm.DB, cfg *config.Config) *Services {
@@ -40,5 +42,6 @@ func InitServices(db *gorm.DB, cfg *config.Config) *Services {
 		Permission: permissService.NewPermissionService(permissRepo.NewPermissionRepository(db)),
 		Menu:       menuService.NewMenuService(menusRepo.NewMenuRepository(db)),
 		Config:     cfg,
+		Posts:      posts.NewPostService(posts.NewGormPostRepository(db)),
 	}
 }

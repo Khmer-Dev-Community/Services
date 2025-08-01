@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strconv"
 
-	//service "github.com/Khmer-Dev-Community/Services/api-service/http/services"
 	dto "github.com/Khmer-Dev-Community/Services/api-service/lib/users/dto"
 	service "github.com/Khmer-Dev-Community/Services/api-service/lib/users/services"
-	"github.com/Khmer-Dev-Community/Services/api-service/utils"
+	"github.com/Khmer-Dev-Community/Services/api-service/utils" // Your utility functions
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin" // Gin framework
+	// Removed: "github.com/gorilla/mux"
 )
 
 type UserController struct {
@@ -23,36 +23,41 @@ func NewUserController(us *service.UserService) *UserController {
 	return &UserController{userService: us}
 }
 
+// UserControllerWrapper is typically not needed when directly passing *gin.Context
+// to controller methods. Gin handlers are directly `func(*gin.Context)`.
+// However, if you have other specific wrapping logic, you can keep it.
+// For this conversion, we'll keep the struct but note its redundancy if only used for method access.
 type UserControllerWrapper struct {
 	userController *UserController
 }
 
 // NewUserControllerWrapper creates a new instance of UserControllerWrapper
+// Note: This wrapper might be redundant if you're directly registering
+// `uc.MethodName` as Gin handlers.
 func NewUserControllerWrapper(us *UserController) *UserControllerWrapper {
 	return &UserControllerWrapper{
 		userController: us,
 	}
 }
 
-// UserListHandler handles requests to list users
 // UserListHandler handles requests to list users.
 // @Summary List users
 // @Description Get a list of users
 // @Tags users
 // @Accept  json
-// @Produse  json
+// @Produce  json
 // @Param page query int false "Page number"
 // @Param limit query int false "Number of items per page"
 // @Param query query string false "Search query"
-// @Suscess 200 {object} utils.PaginationResponse
-// @Failure 500 {string} string "Failed to encode JSON"
+// @Success 200 {object} utils.PaginationResponse // Assuming utils.PaginationResponse is a suitable struct
+// @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /users/list [get]
-func (uc *UserController) UserListHandler(w http.ResponseWriter, r *http.Request) {
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	query := r.URL.Query().Get("query")
-	pageInt, err := strconv.Atoi(pageStr)
+func (uc *UserController) UserListHandler(c *gin.Context) { // Changed signature to *gin.Context
+	pageStr := c.Query("page")   // Use c.Query for query parameters
+	limitStr := c.Query("limit") // Use c.Query for query parameters
+	query := c.Query("query")    // Use c.Query for query parameters
 
+	pageInt, err := strconv.Atoi(pageStr)
 	if err != nil || pageInt <= 0 {
 		pageInt = 1
 	}
@@ -61,20 +66,31 @@ func (uc *UserController) UserListHandler(w http.ResponseWriter, r *http.Request
 	if err != nil || limitInt <= 0 {
 		limitInt = 10
 	}
+
 	requestDto := utils.PaginationRequestDTO{
 		Page:  pageInt,
 		Limit: limitInt,
 		Query: query,
 	}
-	userListResponse := uc.userService.GetUserList(requestDto)
-	utils.NewHttpPaginationResponse(w, userListResponse.Data, userListResponse.Meta.Total, userListResponse.Meta.Page, userListResponse.Meta.LastPage, int(userListResponse.Status), userListResponse.Message)
 
+	userListResponse := uc.userService.GetUserList(requestDto)
+
+	// Adapting NewHttpPaginationResponse to Gin's c.JSON
+	// Assuming userListResponse.Data, Meta, Status, Message are accessible.
+	c.JSON(int(userListResponse.Status), gin.H{ // Use c.JSON for response
+		"data":      userListResponse.Data,
+		"total":     userListResponse.Meta.Total,
+		"page":      userListResponse.Meta.Page,
+		"last_page": userListResponse.Meta.LastPage,
+		"message":   userListResponse.Message,
+	})
 }
 
-func (us *UserController) UserListHandler1(w http.ResponseWriter, r *http.Request) {
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	query := r.URL.Query().Get("query")
+// UserListHandler1 (converted to Gin) - Consider consolidating with UserListHandler
+func (uc *UserController) UserListHandler1(c *gin.Context) { // Changed signature to *gin.Context
+	pageStr := c.Query("page")
+	limitStr := c.Query("limit")
+	query := c.Query("query")
 
 	pageInt, err := strconv.Atoi(pageStr)
 	if err != nil || pageInt <= 0 {
@@ -85,20 +101,26 @@ func (us *UserController) UserListHandler1(w http.ResponseWriter, r *http.Reques
 	if err != nil || limitInt <= 0 {
 		limitInt = 10
 	}
-	users, total, err := us.userService.GetUserList1(pageInt, limitInt, query)
+
+	users, total, err := uc.userService.GetUserList1(pageInt, limitInt, query)
 	if err != nil {
-		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
 		log.Printf("Failed to retrieve users: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"}) // Use Gin's error response
 		return
 	}
 
 	if users == nil {
-		http.Error(w, "No users found", http.StatusNotFound)
 		log.Print("No users found")
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "No users found"}) // Use Gin's error response
 		return
 	}
-
-	utils.NewHttpPaginationResponse(w, users, total, pageInt, limitInt, http.StatusOK, "User list retrieved suscessfully")
+	c.JSON(http.StatusOK, gin.H{ // Use c.JSON for response
+		"data":      users,
+		"total":     total,
+		"page":      pageInt,
+		"last_page": (total + limitInt - 1) / limitInt,
+		"message":   "User list retrieved successfully",
+	})
 }
 
 // UserByIDHandler handles requests to get a user by ID.
@@ -106,57 +128,67 @@ func (us *UserController) UserListHandler1(w http.ResponseWriter, r *http.Reques
 // @Description Get details of a user by ID
 // @Tags users
 // @Accept  json
-// @Produse  json
+// @Produce  json
 // @Param id path int true "User ID"
-// @Suscess 200 {object} UserDTO
-// @Failure 400 {string} string "Invalid user ID"
-// @Failure 500 {string} string "Failed to encode JSON"
+// @Success 200 {object} UserDTO // Assuming UserDTO is visible to Swagger
+// @Failure 400 {object} gin.H "Invalid user ID"
+// @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /users/list/{id} [get]
-func (us *UserController) UserByIDHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	userID, err := strconv.Atoi(id)
+func (uc *UserController) UserByIDHandler(c *gin.Context) { // Changed signature to *gin.Context
+	idStr := c.Param("id") // Use c.Param for path parameters
+	userID, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		utils.HttpSuccessResponse(w, vars, http.StatusBadRequest, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid user ID: %v", err)}) // Use Gin's error response
 		return
 	}
-	// Convert userID to uint
-	repopnse, err := us.userService.GetUserByID(uint(userID))
+
+	response, err := uc.userService.GetUserByID(uint(userID))
 	if err != nil {
-		utils.HttpSuccessResponse(w, repopnse, http.StatusBadRequest, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()}) // Use Gin's error response
 		return
 	}
 
-	if repopnse == nil {
-		utils.HttpSuccessResponse(w, repopnse, http.StatusBadRequest, string(utils.NotFoundMessage))
+	if response == nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": string(utils.NotFoundMessage)}) // Use Gin's error response
 		return
 	}
-	utils.HttpSuccessResponse(w, repopnse, http.StatusOK, string(utils.SuccessMessage))
 
+	c.JSON(http.StatusOK, gin.H{ // Use c.JSON for success response
+		"data":    response,
+		"message": string(utils.SuccessMessage),
+	})
 }
-func (us *UserController) UserProfileHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	user_id := r.Header.Get("token-x-userid")
-	userID, err := strconv.Atoi(user_id)
 
+// UserProfileHandler (converted to Gin)
+func (uc *UserController) UserProfileHandler(c *gin.Context) { // Changed signature to *gin.Context
+	// Get user ID from Gin context, set by AuthMiddlewareWithWhiteList
+	userIDAny, exists := c.Get("userID") // Assuming "userID" is set in context
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+	userID, ok := userIDAny.(uint) // Assert to uint
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type in context"})
+		return
+	}
+
+	response, err := uc.userService.GetUserByID(userID) // Pass uint directly
 	if err != nil {
-		utils.HttpSuccessResponse(w, vars, http.StatusBadRequest, err.Error())
-		return
-	}
-	// Convert userID to uint
-	repopnse, err := us.userService.GetUserByID(uint(userID))
-	if err != nil {
-		utils.HttpSuccessResponse(w, repopnse, http.StatusBadRequest, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if repopnse == nil {
-		utils.HttpSuccessResponse(w, repopnse, http.StatusBadRequest, string(utils.NotFoundMessage))
+	if response == nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": string(utils.NotFoundMessage)})
 		return
 	}
-	utils.HttpSuccessResponse(w, repopnse, http.StatusOK, string(utils.SuccessMessage))
 
+	c.JSON(http.StatusOK, gin.H{
+		"data":    response,
+		"message": string(utils.SuccessMessage),
+	})
 }
 
 // UserCreateHandler handles requests to create a new user.
@@ -164,26 +196,27 @@ func (us *UserController) UserProfileHandler(w http.ResponseWriter, r *http.Requ
 // @Description Create a new user
 // @Tags users
 // @Accept  json
-// @Produse  json
-// @Param user body UserDTO true "User data"
-// @Suscess 200 {string} string "User created suscessfully"
-// @Failure 400 {string} string "Failed to decode request body"
-// @Failure 500 {string} string "Failed to marshal request data"
+// @Produce  json
+// @Param user body dto.UserDTO true "User data" // Ensure dto.UserDTO is visible to Swagger
+// @Success 200 {object} gin.H "User created successfully"
+// @Failure 400 {object} gin.H "Bad Request"
+// @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /users/create [post]
-func (us *UserController) UserCreateHandler(w http.ResponseWriter, r *http.Request) {
+func (uc *UserController) UserCreateHandler(c *gin.Context) { // Changed signature to *gin.Context
 	var createUserDTO dto.UserDTO
-	err := json.NewDecoder(r.Body).Decode(&createUserDTO)
-	if err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+	// Use c.ShouldBindJSON to bind the request body to the DTO.
+	// This handles JSON decoding and error checking.
+	if err := c.ShouldBindJSON(&createUserDTO); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to decode request body: %v", err.Error())})
 		return
 	}
 	data, err := json.Marshal(createUserDTO)
 	if err != nil {
-		http.Error(w, "Failed to marshal request data", http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal request data"})
 		return
 	}
-	us.userService.CreateUser(data)
-
+	uc.userService.CreateUser(data)
+	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"}) // Send success response
 }
 
 // UserUpdateHandler handles requests to update an existing user.
@@ -191,27 +224,27 @@ func (us *UserController) UserCreateHandler(w http.ResponseWriter, r *http.Reque
 // @Description Update an existing user
 // @Tags users
 // @Accept  json
-// @Produse  json
-// @Param user body UserDTO true "User data"
-// @Suscess 200 {string} string "User updated suscessfully"
-// @Failure 400 {string} string "Failed to decode request body"
-// @Failure 500 {string} string "Failed to marshal request data"
+// @Produce  json
+// @Param user body dto.UserDTO true "User data"
+// @Success 200 {object} gin.H "User updated successfully"
+// @Failure 400 {object} gin.H "Bad Request"
+// @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /users/update [put]
-func (us *UserController) UserUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	// Decode the request body into a UserUpdateDTO object
+func (uc *UserController) UserUpdateHandler(c *gin.Context) { // Changed signature to *gin.Context
 	var updateUserDTO dto.UserDTO
-	err := json.NewDecoder(r.Body).Decode(&updateUserDTO)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to decode request body: %v", err), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&updateUserDTO); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to decode request body: %v", err.Error())})
 		return
 	}
+
 	data, err := json.Marshal(updateUserDTO)
 	if err != nil {
-		http.Error(w, "Failed to marshal request data", http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal request data"})
 		return
 	}
-	us.userService.UpdateUser(uint(updateUserDTO.ID), data)
-	//service.HandleAction(w, "Update User", "user_update_queue", data)
+	uc.userService.UpdateUser(uint(updateUserDTO.ID), data)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"}) // Send success response
 }
 
 // UserDeleteHandler handles requests to delete a user.
@@ -219,24 +252,30 @@ func (us *UserController) UserUpdateHandler(w http.ResponseWriter, r *http.Reque
 // @Description Delete a user
 // @Tags users
 // @Accept  json
-// @Produse  json
+// @Produce  json
 // @Param id query int true "User ID"
-// @Suscess 200 {string} string "User deleted suscessfully"
-// @Failure 400 {string} string "ID parameter is required"
-// @Failure 500 {string} string "Failed to encode JSON"
+// @Success 200 {object} gin.H "User deleted successfully"
+// @Failure 400 {object} gin.H "Bad Request"
+// @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /users/delete [delete]
-func (us *UserController) UserDeleteHandler(w http.ResponseWriter, r *http.Request) {
+func (uc *UserController) UserDeleteHandler(c *gin.Context) { // Changed signature to *gin.Context
+	idStr := c.Query("id") // Use c.Query for query parameters
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+	if idStr == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID parameter is required"})
 		return
 	}
-	userID, err := strconv.Atoi(id)
+
+	userID, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
-	us.userService.DeleteUser(uint(userID))
-	//service.HandleAction(w, "Delete User", "user_delete_queue", payload)
+
+	// Call the service method.
+	// You might want to get a response from uc.userService.DeleteUser(uint(userID))
+	// and use it to craft a success/failure message.
+	uc.userService.DeleteUser(uint(userID))
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"}) // Send success response
 }
