@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 	"gorm.io/gorm" // Make sure you have GORM installed: go get gorm.io/gorm
 )
 
 var ErrPostNotFound = errors.New("post not found")
 
 type PostRepository interface {
-	CreatePost(ctx context.Context, post *Post) error
+	CreatePost_(ctx context.Context, post *Post) error
+	CreatePost(ctx context.Context, post *Post) (*Post, error)
 	GetPostByID(ctx context.Context, id uint) (*Post, error)
 	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 	UpdatePost(ctx context.Context, post *Post) error
@@ -31,9 +33,19 @@ func NewGormPostRepository(db *gorm.DB) PostRepository {
 }
 
 // CreatePost implements PostRepository.CreatePost
-func (r *GormPostRepository) CreatePost(ctx context.Context, post *Post) error {
+func (r *GormPostRepository) CreatePost_(ctx context.Context, post *Post) error {
 	result := r.db.WithContext(ctx).Create(post)
 	return result.Error
+}
+func (r *GormPostRepository) CreatePost(ctx context.Context, post *Post) (*Post, error) {
+	err := r.db.Create(post).Error
+	if err != nil {
+		utils.LoggerRepository(err, "Execute")
+		return nil, err
+	}
+
+	utils.LoggerRepository(post, "Execute")
+	return post, nil
 }
 
 // GetPostByID implements PostRepository.GetPostByID

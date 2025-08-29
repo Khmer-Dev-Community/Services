@@ -23,14 +23,12 @@ func NewClientAuthControllerWrapper(cac *auth02.ClientAuthController) *ClientAut
 	}
 }
 
-// SetupRouterAuth02 initializes and configures the router for the client authentication.
-// It now directly accepts a *gin.Engine for registration.
-func SetupRouterAuth02(r *gin.Engine, clientAuthCtrl *auth02.ClientAuthController) { // <--- CHANGED SIGNATURE to *gin.Engine
+func SetupRouterAuth02(r *gin.Engine, clientAuthCtrl *auth02.ClientAuthController) {
 
 	clientAuthControllerWrapper := NewClientAuthControllerWrapper(clientAuthCtrl)
 	githubClientID := "Ov23liBVXaZ0bV6B43Ut"
 	githubClientSecret := "28f9c091b494fc8bc1fd2b795c77be27b322f2c4"
-	githubRedirectURL := "http://localhost:3000/api/account/auth02/github/callback"
+	githubRedirectURL := "http://localhost:3000/api/auth02/github/callback"
 
 	if githubClientID == "" || githubClientSecret == "" || githubRedirectURL == "" {
 		log.Println("WARNING: GitHub OAuth environment variables (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URL) are not fully set. GitHub login might not work.")

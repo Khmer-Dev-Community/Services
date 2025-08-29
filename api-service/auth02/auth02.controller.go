@@ -216,9 +216,6 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed si
 	key := fmt.Sprintf("user:%d", user.ID)
 	user.Token = appToken
 
-	// Store user info in Redis
-	// Note: You are storing the 'response' struct, which contains the token and user DTO.
-	// Ensure your redis.SetWithExpiration can handle marshaling this struct to JSON.
 	if err := redis.SetWithExpiration(key, response, expirationDuration); err != nil {
 		utils.ErrorLog(map[string]interface{}{"error": err.Error()}, "Failed to store user info in Redis")
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to store user information in Redis"})
@@ -236,8 +233,8 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed si
 		true,                              // httpOnly
 	)
 
-	frontendRedirectURL := "http://localhost/auth/callback" // Redirect to your frontend
-	c.Redirect(http.StatusFound, frontendRedirectURL)       // Use c.Redirect
+	frontendRedirectURL := "http://192.168.50.102:8080/" // Redirect to your frontend
+	c.Redirect(http.StatusFound, frontendRedirectURL)    // Use c.Redirect
 
 	utils.LoggerRequest(map[string]interface{}{"user_id": userResponse.ID}, "GitHub Callback", fmt.Sprintf("Client user logged in/registered via GitHub: %s", userResponse.Username))
 }
@@ -253,7 +250,7 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed si
 // @Failure 404 {object} gin.H "Client user not found"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /client/profile [get]
-func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) { // Changed signature
+func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) {
 	// Retrieve userID from Gin context (set by AuthMiddleware)
 	userIDAny, exists := c.Get("userID")
 	if !exists {
@@ -261,6 +258,7 @@ func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) { // Changed 
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID missing from context"})
 		return
 	}
+
 	userID, ok := userIDAny.(uint)
 	if !ok {
 		utils.ErrorLog(map[string]interface{}{"userID_type": fmt.Sprintf("%T", userIDAny)}, "Invalid User ID type in Gin context for GetClientProfile")
@@ -279,7 +277,7 @@ func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) { // Changed 
 		return
 	}
 
-	c.JSON(http.StatusOK, userDTO) // Use c.JSON
+	c.JSON(http.StatusOK, userDTO)
 	utils.LoggerRequest(map[string]interface{}{"user_id": userID}, "Get Client Profile", fmt.Sprintf("Retrieved profile for client ID %d", userID))
 }
 

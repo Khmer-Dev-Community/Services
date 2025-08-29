@@ -35,6 +35,7 @@ func NewPostService(repo PostRepository) PostService { // CORRECTED: Accepts the
 }
 
 func (s *postService) CreatePost(ctx context.Context, req CreatePostRequest, authorID uint) (*PostResponse, error) {
+	utils.InfoLog(req, "req CreatePostRequest")
 	generatedSlug := slug.Make(req.Title)
 	if generatedSlug == "" {
 		utils.ErrorLog(map[string]interface{}{"title": req.Title}, "Failed to generate slug for post creation")
@@ -47,16 +48,15 @@ func (s *postService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 	}
 
 	postModel := ToPostModel(req, authorID, generatedSlug)
-	postModel.Status = getDefaultStatus(req.Status) // Assuming getDefaultStatus is defined in this package
-
-	err := s.repo.CreatePost(ctx, &postModel)
+	postModel.Status = getDefaultStatus(req.Status)
+	utils.InfoLog(postModel, " CreatePost(ctx context.Context, req CreatePostRequest, authorID uint)")
+	data, err := s.repo.CreatePost(ctx, &postModel)
 	if err != nil {
 		utils.ErrorLog(map[string]interface{}{"post": postModel, "error": err.Error()}, "Failed to create post in repository")
 		return nil, fmt.Errorf("service: failed to create post: %w", err)
 	}
-
-	utils.LoggerService(map[string]interface{}{"post_id": postModel.ID, "title": postModel.Title}, "Post created successfully", logrus.InfoLevel)
-	response := ToPostResponse(postModel) // Assuming ToPostResponse is defined in this package
+	response := ToPostResponse(*data)
+	utils.InfoLog(response, "Post created respose")
 	return &response, nil
 }
 

@@ -19,25 +19,24 @@ func NewPostControllerHandler(service posts.PostService) *PostControllerHandler 
 	return &PostControllerHandler{service: service}
 }
 
-// CreatePost handles POST /posts requests.
 func (h *PostControllerHandler) CreatePost(c *gin.Context) {
 	var req posts.CreatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.LoggerRequest(map[string]interface{}{"error": err.Error()}, "Invalid CreatePostRequest", "Bad request body for post creation")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
 		return
 	}
 
-	userID, exists := c.Get("userID") // Assuming userID is set by an auth middleware
+	userID, exists := c.Get("userID")
 	if !exists {
 		utils.ErrorLog(nil, "Unauthorized: UserID not found in context for post creation")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	authorID, ok := userID.(uint) // Assert type to uint
+	authorID, ok := userID.(uint)
 	if !ok {
 		utils.ErrorLog(nil, "Internal Server Error: UserID in context is not of type uint")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -45,16 +44,16 @@ func (h *PostControllerHandler) CreatePost(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, posts.ErrSlugGenerationFailed) {
 			utils.ErrorLog(map[string]interface{}{"request": req, "error": err.Error()}, "Failed to create post due to slug generation error")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate post slug"})
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate post slug")
 			return
 		}
 		utils.ErrorLog(map[string]interface{}{"request": req, "author_id": authorID, "error": err.Error()}, "Service error during post creation")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create post")
 		return
 	}
 
-	utils.LoggerRequest(map[string]interface{}{"post_id": postResponse.ID, "title": postResponse.Title}, "Post created successfully", "Post creation successful")
-	c.JSON(http.StatusCreated, postResponse)
+	utils.InfoLog(postResponse, "Post created")
+	utils.SuccessResponse(c, http.StatusOK, postResponse, "Post created successfully")
 }
 
 // GetPostByID handles GET /posts/:id requests.

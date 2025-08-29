@@ -35,10 +35,10 @@ type Reaction struct {
 	Type   string `gorm:"type:varchar(20)"` // e.g., "like", "heart", "upvote", "downvote"
 }
 
-func (Post) TableName() string {
+func (p *Post) TableName() string {
 	return "client_content_post" // Distinct table name for client users
 }
 
-func MigrateClientUsers(db *gorm.DB) {
+func MigrateClientPost(db *gorm.DB) {
 	db.AutoMigrate(&Post{})
 }

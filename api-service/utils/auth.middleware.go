@@ -6,28 +6,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil" // Used for backwards compatibility, io.ReadAll is preferred for Go 1.16+
-	"log"       // For log.Printf in the caching goroutine
-	"net/http"  // For HTTP status codes and methods
-	"strconv"   // For string to int conversion
-	"strings"   // For string manipulation (e.g., strings.TrimPrefix, strings.HasPrefix)
-	"sync"      // For mutex in caching
-	"time"      // For time-related operations (e.g., cache TTL)
+	"io"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
-	redis "github.com/Khmer-Dev-Community/Services/api-service/config" // Assuming this imports your Redis client setup
-
-	"github.com/gin-gonic/gin"     // Gin framework import
-	"github.com/golang-jwt/jwt/v4" // JWT library
+	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
-// secretKey is used for signing and verifying JWT tokens.
-// IMPORTANT: In a production environment, this should be loaded from
-// environment variables or a secure configuration management system,
-// not hardcoded.
+// A placeholder for your actual dependencies.
 var secretKey = []byte("ihuegrbnor7nou3hu3uh3uh3")
 
-// UserDTO represents the structure of user data, typically used for
-// transferring user information between layers or for JWT claims.
+// UserDTO is a placeholder for your user data transfer object.
 type UserDTO struct {
 	ID        uint   `json:"id"`
 	FirstName string `json:"fname"`
@@ -42,149 +37,119 @@ type UserDTO struct {
 	Token     string `json:"token"`
 }
 
-func AuthMiddlewareWithWhiteList(whitelist []string) gin.HandlerFunc {
+func IsWhitelisted(path string, whitelist map[string]bool) bool {
+	_, ok := whitelist[path]
+	return ok
+}
+
+// AuthMiddlewareWithWhiteList is a Gin middleware for authenticating requests with a whitelist.
+func AuthMiddlewareWithWhiteList(whitelist map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. Check if the current request path is in the whitelist.
-		if IsWhitelisted(c.Request.URL.Path, whitelist) {
-			c.Next() // If whitelisted, skip authentication and proceed to the next handler.
+		// 1. Check for whitelisted paths first
+		if IsWhitelisted(c.Request.URL.Path, whitelist) || c.Request.Method == http.MethodOptions {
+			c.Next()
 			return
 		}
+
+		// 2. Extract JWT from either a cookie or the Authorization header
 		var jwtToken string
-		cookie, err := c.Request.Cookie("kdc.secure.token")
-		if err == nil && cookie != nil {
-			jwtToken = cookie.Value
-			// Optionally set a header for compatibility if other parts of your system expect it.
-			c.Request.Header.Set("kdc-x-token", jwtToken)
+		if cookie, err := c.Cookie("kdc.secure.token"); err == nil && cookie != "" {
+			jwtToken = cookie
 		} else {
-			// If no cookie, try to get from Authorization header (Bearer token).
 			authHeader := c.GetHeader("Authorization")
-			if authHeader != "" {
-				jwtToken = strings.TrimPrefix(authHeader, "Bearer ")
-			} else {
-				// If no token found in cookie or header, respond with Unauthorized.
-				ErrorLog(map[string]interface{}{"path": c.Request.URL.Path}, "Unauthorized: No token found in cookie or Authorization header")
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User authentication required: token not found"})
 				return
 			}
+			jwtToken = strings.TrimPrefix(authHeader, "Bearer ")
 		}
 
-		_, err = decryptToken(jwtToken)
-		if err != nil {
-			ErrorLog(map[string]interface{}{"error": err.Error(), "token_snippet": jwtToken[:min(len(jwtToken), 20)]}, "Error decrypting token or invalid token format")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			return
-		}
-
-		// 4. Parse and validate the full JWT token, including claims.
-		token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		// 3. Parse and validate JWT
+		token, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return secretKey, nil // Return the secret key for validation.
+			return secretKey, nil
 		})
 		if err != nil || !token.Valid {
-			ErrorLog(map[string]interface{}{"error": err.Error(), "token_valid": token.Valid}, "Error parsing or validating JWT token")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
 
-		// 5. Extract claims and verify user ID.
+		// 4. Extract claims and validate
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			ErrorLog(map[string]interface{}{}, "Invalid token claims format")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 			return
 		}
-
 		userIDFloat, ok := claims["id"].(float64)
 		if !ok {
-			ErrorLog(map[string]interface{}{"claims": claims}, "User ID not found or invalid type in token claims")
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: User ID missing in token"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "User ID missing in token"})
 			return
 		}
-		userID := uint(userIDFloat) // Convert from float64 to uint.
+		userID := uint(userIDFloat)
 
-		// 6. Fetch full user data from Redis using the user ID from claims.
+		// 5. Validate token against Redis
 		redisKey := fmt.Sprintf("user:%d", userID)
 		userDataJSON, err := redis.Get(redisKey)
 		if err != nil {
-			ErrorLog(map[string]interface{}{"user_id": userID, "error": err.Error()}, "Token expired or user data not found in Redis")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expired or not found"})
 			return
 		}
 
-		// 7. Unmarshal Redis user data into UserDTO.
 		var storedUser UserDTO
 		if err := json.Unmarshal([]byte(userDataJSON), &storedUser); err != nil {
-			ErrorLog(map[string]interface{}{"user_id": userID, "error": err.Error()}, "Failed to decode user data from Redis")
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode user data"})
 			return
 		}
+
 		if jwtToken != storedUser.Token {
-			ErrorLog(map[string]interface{}{"user_id": userID, "token_match": false}, "Unauthorized: Account logged in on another device")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Your account is logged in on another device"})
 			return
 		}
 
-		// 9. Update token expiration in Redis to keep the session alive.
-		expiration := time.Minute * 30
-		if err := redis.UpdateExpiration(redisKey, expiration); err != nil {
-			ErrorLog(map[string]interface{}{"user_id": userID, "error": err.Error()}, "Failed to refresh token expiration in Redis")
-			// Decide if this should block the request. Typically, this would be a warning.
-			// However, adhering to your original logic, it aborts with a 500 error.
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to refresh token expiration"})
-			return
-		}
-		c.Set("userID", storedUser.ID)
+		// 6. Refresh token expiration in Redis
+		_ = redis.UpdateExpiration(redisKey, 720*time.Hour)
+		c.Set("userID", userID)
 		c.Set("roleID", storedUser.RoleID)
 		c.Set("companyID", storedUser.CompanyID)
 		c.Set("username", storedUser.Username)
-		c.Set("userDTO", storedUser) // Store the full DTO if needed
-		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut || c.Request.Method == http.MethodPatch {
-			bodyBytes, err := ioutil.ReadAll(c.Request.Body) // Read the original body bytes.
+		c.Set("userDTO", storedUser)
+
+		// 7. Inject companyId & userId into request body
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut || c.Request.Method == http.MethodPatch || c.Request.Method == http.MethodDelete {
+			bodyBytes, err := io.ReadAll(c.Request.Body)
 			if err != nil {
-				ErrorLog(map[string]interface{}{"error": err.Error()}, "Failed to read request body in AuthMiddleware")
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
 				return
 			}
-			c.Request.Body.Close() // Close the original request body.
+			c.Request.Body.Close()
 
 			var requestBody map[string]interface{}
-			if len(bodyBytes) > 0 { // Only attempt to unmarshal if the body is not empty.
+			if len(bodyBytes) > 0 {
 				if err := json.Unmarshal(bodyBytes, &requestBody); err != nil {
-					ErrorLog(map[string]interface{}{"error": err.Error(), "body_snippet": string(bodyBytes[:min(len(bodyBytes), 50)])}, "Invalid request body JSON in AuthMiddleware")
 					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 					return
 				}
 			} else {
-				requestBody = make(map[string]interface{}) // Initialize an empty map if body was empty.
+				requestBody = make(map[string]interface{})
 			}
 
-			// Add or update companyId and userId in the request body map.
 			requestBody["companyId"] = storedUser.CompanyID
 			requestBody["userId"] = storedUser.ID
 
-			updatedBodyBytes, err := json.Marshal(requestBody) // Marshal the modified map back to JSON bytes.
+			updatedBodyBytes, err := json.Marshal(requestBody)
 			if err != nil {
-				ErrorLog(map[string]interface{}{"error": err.Error()}, "Failed to marshal updated request body in AuthMiddleware")
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to process request body"})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal updated body"})
 				return
 			}
-
-			// Reset the request body for subsequent handlers/controllers to read the modified version.
-			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(updatedBodyBytes))
-			c.Request.ContentLength = int64(len(updatedBodyBytes))   // Set content length to the new body size.
-			c.Request.Header.Set("Content-Type", "application/json") // Ensure Content-Type is correct.
-
-			InfoLog(map[string]interface{}{"updated_body_snippet": string(updatedBodyBytes[:min(len(updatedBodyBytes), 100)])}, "Request body updated in AuthMiddleware")
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(updatedBodyBytes))
+			c.Request.ContentLength = int64(len(updatedBodyBytes))
 		}
-
-		c.Next() // Proceed to the next middleware or handler in the chain.
+		c.Next()
 	}
 }
 
-// decryptToken parses and validates a JWT token string and extracts basic UserDTO information.
-// It's a helper function for the authentication middleware.
 func decryptToken(tokenString string) (*UserDTO, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Verify the signing method.
@@ -236,18 +201,6 @@ func decryptToken(tokenString string) (*UserDTO, error) {
 		CompanyID: uint(companyIDFloat),
 		Token:     tokenFromClaims, // Include the token from claims for comparison
 	}, nil
-}
-
-// IsWhitelisted checks if the given path matches any path in the whitelist.
-// This supports basic prefix matching for simplicity.
-func IsWhitelisted(path string, whitelist []string) bool {
-	for _, wp := range whitelist {
-		// Check for exact match or prefix match (e.g., "/swagger/" should match "/swagger/index.html")
-		if path == wp || strings.HasPrefix(path, wp) {
-			return true
-		}
-	}
-	return false
 }
 
 // min is a helper function to get the minimum of two integers.

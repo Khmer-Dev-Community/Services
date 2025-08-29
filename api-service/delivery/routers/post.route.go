@@ -30,7 +30,7 @@ func SetupPostRouter(r *gin.Engine, postService postServices.PostService) { // C
 	publicPostRoutes.GET("/slug/:slug", wrappedPostController.controller.GetPostBySlug)
 	authenticatedPostRoutes := api.Group("/posts")
 
-	authenticatedPostRoutes.POST("/", wrappedPostController.controller.CreatePost)
+	authenticatedPostRoutes.POST("/create", wrappedPostController.controller.CreatePost)
 	authenticatedPostRoutes.PUT("/:id", wrappedPostController.controller.UpdatePost)
 	authenticatedPostRoutes.PATCH("/:id", wrappedPostController.controller.UpdatePost)
 	// DELETE /api/posts/:id - Delete Post

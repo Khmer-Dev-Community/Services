@@ -34,6 +34,7 @@ func InitServices(db *gorm.DB, cfg *config.Config) *Services {
 	clientUserRepository := userclientRepo.NewClientUserRepository(db)
 	clientAuthService := clientAuthService.NewClientAuthService(clientUserRepository) // clientauth_service
 	userclientRepo.MigrateClientUsers(db)
+	posts.MigrateClientPost(db)
 	return &Services{
 		Auth:       auth.NewAuthService(auth.NewUserRepository(db)),
 		Auth02:     auth02.NewClientAuthController(clientAuthService),
