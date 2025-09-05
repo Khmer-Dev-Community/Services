@@ -79,7 +79,7 @@ func (h *PostControllerHandler) GetPostByID(c *gin.Context) {
 	}
 
 	utils.LoggerRequest(map[string]interface{}{"post_id": id, "title": postResponse.Title}, "Post retrieved by ID successfully", "Post retrieved")
-	c.JSON(http.StatusOK, postResponse)
+	utils.SuccessResponse(c, http.StatusOK, postResponse, "success")
 }
 
 // GetPostBySlug handles GET /posts/slug/:slug requests.
@@ -236,10 +236,5 @@ func (h *PostControllerHandler) ListPosts(c *gin.Context) {
 	}
 
 	utils.LoggerRequest(map[string]interface{}{"offset": offset, "limit": limit, "status": status, "tag": tag, "count": len(posts), "total": totalCount}, "Posts listed successfully", "Posts retrieved")
-	c.JSON(http.StatusOK, gin.H{
-		"posts":      posts,
-		"totalCount": totalCount,
-		"offset":     offset,
-		"limit":      limit,
-	})
+	utils.SuccessResponsePage(c, http.StatusOK, posts, int(totalCount), offset, offset, "Success")
 }

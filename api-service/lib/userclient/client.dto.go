@@ -4,6 +4,17 @@ import (
 	"time"
 )
 
+type ClientUserResponseInfor struct {
+	ID        uint   `json:"id"`
+	AvatarURL string `json:"avatar_url"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Username  string `json:"username"`
+	Likes     uint   `json:"likes"`
+	Follower  uint   `json:"follower"`
+	Following uint   `json:"following"`
+}
+
 // ClientUserResponseDTO represents the data response
 type ClientUserResponseDTO struct {
 	ID          uint    `json:"id"`

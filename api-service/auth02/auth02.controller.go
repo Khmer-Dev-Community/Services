@@ -6,6 +6,7 @@ import (
 	"net/http" // Still needed for http.StatusOK, http.StatusBadRequest etc.
 	"time"
 
+	"github.com/Khmer-Dev-Community/Services/api-service/config"
 	redis "github.com/Khmer-Dev-Community/Services/api-service/config"
 	clientauth_service "github.com/Khmer-Dev-Community/Services/api-service/lib/clientauth"
 	"github.com/Khmer-Dev-Community/Services/api-service/lib/userclient"
@@ -162,7 +163,7 @@ func (ctrl *ClientAuthController) GitHubLoginRedirect(c *gin.Context) { // Chang
 // @Failure 400 {object} gin.H "Missing authorization code or state / Invalid state parameter"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /client/github/callback [get]
-func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed signature
+func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context, cfg *config.GitConfig) { // Changed signature
 	code := c.Query("code")   // Use c.Query
 	state := c.Query("state") // Use c.Query
 
@@ -230,11 +231,11 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed si
 		"/",                               // path
 		"",                                // domain (empty for current domain)
 		c.Request.TLS != nil,              // secure (true if HTTPS, false for HTTP)
-		true,                              // httpOnly
+		false,                             // httpOnly
 	)
 
-	frontendRedirectURL := "http://192.168.50.102:8080/" // Redirect to your frontend
-	c.Redirect(http.StatusFound, frontendRedirectURL)    // Use c.Redirect
+	frontendRedirectURL := cfg.ClientEnd              // "http://localhost:8080/"   // Redirect to your frontend
+	c.Redirect(http.StatusFound, frontendRedirectURL) // Use c.Redirect
 
 	utils.LoggerRequest(map[string]interface{}{"user_id": userResponse.ID}, "GitHub Callback", fmt.Sprintf("Client user logged in/registered via GitHub: %s", userResponse.Username))
 }
@@ -251,7 +252,6 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context) { // Changed si
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /client/profile [get]
 func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) {
-	// Retrieve userID from Gin context (set by AuthMiddleware)
 	userIDAny, exists := c.Get("userID")
 	if !exists {
 		utils.ErrorLog(nil, "User ID not found in Gin context for GetClientProfile")
@@ -330,4 +330,19 @@ func (ctrl *ClientAuthController) UpdateClientProfile(c *gin.Context) { // Chang
 
 	c.JSON(http.StatusOK, updatedUserDTO) // Use c.JSON
 	utils.LoggerRequest(map[string]interface{}{"user_id": userID}, "Update Client Profile", fmt.Sprintf("Updated profile for client ID %d", userID))
+}
+
+func (ctrl *ClientAuthController) ClientLogout(c *gin.Context, cfg *config.GitConfig) {
+	c.SetCookie(
+		"kdc.secure.token",
+		"",
+		-1,
+		"/",                  // MUST match the path of the original cookie
+		"",                   // MUST match the domain of the original cookie
+		c.Request.TLS != nil, // MUST match the secure attribute
+		false,                // MUST match the httpOnly attribute
+	)
+	frontendRedirectURL := cfg.ClientEnd + "home"
+	c.Redirect(http.StatusFound, frontendRedirectURL)
+	utils.InfoLog(map[string]interface{}{"logout": ""}, "success")
 }

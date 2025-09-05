@@ -22,12 +22,12 @@ service:
   grcp: false
 
 minio:
-  Endpoint: "localhost:9000"
+  Endpoint: "194.233.95.128:9000"
   AccessKeyID: "LDkJvmxsLZVg0PgbX1an"
   SecretAccessKey: "u24eGV04RcwPVss8iJ6GzTaunV867dwBwUxGf5qt"
   UseSSL: false
   MaxFileSize: 25485760 # 25MB
-  Domain: "http://localhost:9000"
+  Domain: "http://194.233.95.128:9000"
 
 telegram:
   status: true
@@ -48,4 +48,5 @@ telegram:
 github:
   client_id: "Ov23liBVXaZ0bV6B43Ut"
   client_secret: "28f9c091b494fc8bc1fd2b795c77be27b322f2c4"
-  client_redir: "http://localhost:3000/api/account/auth02/github/callback"
+  client_redir: "http://localhost:3000/api/auth02/github/callback"
+  client_endpoint: "http://localhost:8080/"

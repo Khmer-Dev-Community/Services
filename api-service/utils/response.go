@@ -10,6 +10,7 @@ import (
 // Response represents the structure of the response
 type Response struct {
 	Data    interface{} `json:"data"`
+	Meta    Meta        `json:"meta"`
 	Status  int         `json:"statusCode"`
 	Message string      `json:"message"`
 }
@@ -29,7 +30,8 @@ func RespondWithError(w http.ResponseWriter, status int, message string) {
 // RespondWithJSON responds with JSON data
 func RespondWithJSON(w http.ResponseWriter, status int, data interface{}) {
 	response := Response{
-		Data:    data,
+		Data: data,
+
 		Status:  status,
 		Message: "Success",
 	}
@@ -42,6 +44,7 @@ type ResponseData struct {
 	Data    interface{} `json:"data"`
 	Message string      `json:"message"`
 	Status  uint        `json:"statusCode"`
+	Meta    Meta        `json:"meta"`
 }
 
 // SuccessResponse sends a standardized success JSON response.
@@ -52,7 +55,18 @@ func SuccessResponse(c *gin.Context, status int, data interface{}, message strin
 		Status:  uint(status),
 	})
 }
-
+func SuccessResponsePage(c *gin.Context, status int, data interface{}, total int, page int, lastPage int, message string) {
+	c.JSON(status, ResponseData{
+		Data: data,
+		Meta: Meta{
+			Total:    total,
+			Page:     page,
+			LastPage: lastPage,
+		},
+		Message: message,
+		Status:  uint(status),
+	})
+}
 func ErrorResponse(c *gin.Context, status int, message string, details ...interface{}) {
 
 	response := ResponseData{

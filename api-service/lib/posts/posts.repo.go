@@ -51,7 +51,16 @@ func (r *GormPostRepository) CreatePost(ctx context.Context, post *Post) (*Post,
 // GetPostByID implements PostRepository.GetPostByID
 func (r *GormPostRepository) GetPostByID(ctx context.Context, id uint) (*Post, error) {
 	var post Post
-	result := r.db.WithContext(ctx).First(&post, id)
+
+	// Build the base query and apply the Preload
+	query := r.db.WithContext(ctx).
+		Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
+		})
+
+	// Execute the query
+	result := query.First(&post, id)
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrPostNotFound
@@ -64,7 +73,17 @@ func (r *GormPostRepository) GetPostByID(ctx context.Context, id uint) (*Post, e
 // GetPostBySlug implements PostRepository.GetPostBySlug
 func (r *GormPostRepository) GetPostBySlug(ctx context.Context, slug string) (*Post, error) {
 	var post Post
-	result := r.db.WithContext(ctx).Where("slug = ?", slug).First(&post)
+
+	// Build the base query with the Where clause and Preload
+	query := r.db.WithContext(ctx).
+		Where("slug = ?", slug).
+		Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
+		})
+
+	// Execute the query
+	result := query.First(&post)
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrPostNotFound
@@ -95,7 +114,14 @@ func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, s
 	if limit > 50 {
 		limit = 50
 	}
-	query := r.db.WithContext(ctx).Offset(offset).Limit(limit).Order("created_at DESC")
+
+	query := r.db.WithContext(ctx).
+		Offset(offset).
+		Limit(limit).
+		Order("created_at DESC").
+		Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
+		})
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -103,6 +129,7 @@ func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, s
 	if tag != "" {
 		query = query.Where("tags LIKE ?", "%"+tag+"%")
 	}
+
 	result := query.Find(&posts)
 	return posts, result.Error
 }

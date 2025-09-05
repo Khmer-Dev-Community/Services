@@ -2,6 +2,8 @@ package posts
 
 import (
 	"strings"
+
+	"github.com/Khmer-Dev-Community/Services/api-service/lib/userclient"
 )
 
 // ToPostResponse converts a Post model to a PostResponse DTO.
@@ -10,6 +12,28 @@ func ToPostResponse(post Post) PostResponse {
 	if post.Tags != "" {
 		tagsArray = splitTagsString(post.Tags)
 	}
+
+	var authorResponse userclient.ClientUserResponseInfor
+	// Check if the Author pointer is not nil.
+	if post.Author != nil {
+		var avatarURL string
+		// Check if the AvatarURL pointer is not nil.
+		if post.Author.AvatarURL != nil {
+			avatarURL = *post.Author.AvatarURL
+		}
+
+		authorResponse = userclient.ClientUserResponseInfor{
+			ID:        post.Author.ID,
+			AvatarURL: avatarURL,
+			FirstName: post.Author.FirstName,
+			LastName:  post.Author.LastName,
+			Username:  post.Author.Username,
+			Likes:     uint(post.Author.Likes),
+			Follower:  uint(post.Author.Follower),
+			Following: uint(post.Author.Following),
+		}
+	}
+
 	return PostResponse{
 		ID:               post.ID,
 		Title:            post.Title,
@@ -18,6 +42,7 @@ func ToPostResponse(post Post) PostResponse {
 		ViewCount:        post.ViewCount,
 		FeaturedImageURL: post.FeaturedImageURL,
 		AuthorID:         post.AuthorID,
+		Author:           authorResponse,
 		Tags:             tagsArray,
 		Status:           post.Status,
 		CreatedAt:        post.CreatedAt,

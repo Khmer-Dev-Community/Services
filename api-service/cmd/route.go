@@ -22,7 +22,11 @@ var whitelist = map[string]bool{
 	"/api/auth/logout":                         true,
 	"/api/auth02/register":                     true,
 	"/api/auth02/login":                        true,
+	"/api/posts/list":                          true,
+	"/api/posts/v/:id":                         true,
+	"/api/posts/p/:slug":                       true,
 	"/api/auth02/github/login":                 true,
+	"/api/auth02/logout":                       true,
 	"/api/account/auth02/github/login":         true,
 	"/api/auth02/github/callback":              true,
 	"/api/swagger/index.html":                  true,
@@ -48,7 +52,7 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	r.Use(utils.AuthMiddlewareWithWhiteList(whitelist))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	routers.SetupRouter(r, s.User)
-	routers.SetupRouterAuth02(r, s.Auth02)
+	routers.SetupRouterAuth02(r, s.Auth02, &cfg.Github)
 	routers.SetupPostRouter(r, s.Posts)
 	return r
 }

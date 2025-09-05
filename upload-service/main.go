@@ -21,6 +21,7 @@ import (
 
 var whitelist = map[string]bool{
 	"/api/upload/profile":                      true,
+	"/api/upload/employee":                     true,
 	"/api/upload/pdf":                          true,
 	"/api/video/videosnap":                     true,
 	"/api/video/videostop":                     true,
@@ -65,7 +66,7 @@ func main() {
 
 	// Create a new CORS handler with desired options
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://localhost:8080", "http://localhost:3300", "http://localhost:3000", "http://localhost:4000", "http://192.168.50.102:8080", "*"},
+		AllowedOrigins:   []string{"http://localhost:8080", "http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"*"},

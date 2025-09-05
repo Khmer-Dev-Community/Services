@@ -18,7 +18,8 @@ type Config struct {
 	RabbitMQURL string         `yaml:"RabbitMQURL"`
 	Redis       ConfigRedis    `yaml:"redis"`
 	Service     ServiceConfig  `yaml:"service"`
-	Telegram    TelegramConfig `yaml:"telegram"`
+	//Telegram    TelegramConfig `yaml:"telegram"`
+	Github GitConfig `yaml:"github"`
 }
 
 // telegram

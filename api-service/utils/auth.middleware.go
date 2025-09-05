@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +45,8 @@ func IsWhitelisted(path string, whitelist map[string]bool) bool {
 func AuthMiddlewareWithWhiteList(whitelist map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. Check for whitelisted paths first
-		if IsWhitelisted(c.Request.URL.Path, whitelist) || c.Request.Method == http.MethodOptions {
+		fullRoute := c.FullPath()
+		if IsWhitelisted(fullRoute, whitelist) || c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}
@@ -55,14 +55,15 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) gin.HandlerFunc {
 		var jwtToken string
 		if cookie, err := c.Cookie("kdc.secure.token"); err == nil && cookie != "" {
 			jwtToken = cookie
-		} else {
+		}
+		/*else {
 			authHeader := c.GetHeader("Authorization")
 			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User authentication required: token not found"})
 				return
 			}
 			jwtToken = strings.TrimPrefix(authHeader, "Bearer ")
-		}
+		}*/
 
 		// 3. Parse and validate JWT
 		token, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
