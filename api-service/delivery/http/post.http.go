@@ -104,7 +104,8 @@ func (h *PostControllerHandler) GetPostBySlug(c *gin.Context) {
 	}
 
 	utils.LoggerRequest(map[string]interface{}{"slug": slugParam, "post_id": postResponse.ID}, "Post retrieved by slug successfully", "Post retrieved")
-	c.JSON(http.StatusOK, postResponse)
+	//c.JSON(http.StatusOK, postResponse)
+	utils.SuccessResponse(c, http.StatusOK, postResponse, "success")
 }
 
 // UpdatePost handles PUT/PATCH /posts/:id requests.

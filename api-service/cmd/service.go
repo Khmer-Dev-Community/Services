@@ -28,6 +28,7 @@ type Services struct {
 	Menu       *menuService.MenuService
 	Config     *config.Config
 	Posts      posts.PostService
+	Comments   posts.CommentService
 }
 
 func InitServices(db *gorm.DB, cfg *config.Config) *Services {
@@ -44,5 +45,6 @@ func InitServices(db *gorm.DB, cfg *config.Config) *Services {
 		Menu:       menuService.NewMenuService(menusRepo.NewMenuRepository(db)),
 		Config:     cfg,
 		Posts:      posts.NewPostService(posts.NewGormPostRepository(db)),
+		Comments:   posts.NewGormCommentService(posts.NewGormCommentRepository(db)),
 	}
 }

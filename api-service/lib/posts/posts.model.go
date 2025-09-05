@@ -7,6 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type ReactionType string
+
+const (
+	Like     ReactionType = "like"
+	Love     ReactionType = "love"
+	Laughing ReactionType = "laughing"
+	// Add other reaction types as needed
+)
+
 type Post struct {
 	ID               uint                   `gorm:"primaryKey"`
 	Title            string                 `json:"title" gorm:"type:varchar(255);not null"`
@@ -21,28 +30,44 @@ type Post struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
+
+	Comments  []Comment  `json:"comments" gorm:"foreignKey:PostID"`
+	Reactions []Reaction `json:"reactions" gorm:"foreignKey:PostID"`
 }
 
-// AllowanceTypeID uint          `gorm:"column:allowance_type_id;not null" json:"allowance_type_id"`
-// AllowancesList  AllowanceType `gorm:"foreignKey:AllowanceTypeID" json:"allowance_list"`
 type Comment struct {
-	gorm.Model
-	PostID  uint   `gorm:"not null"`
-	UserID  uint   `gorm:"not null"`
-	Content string `gorm:"type:text;not null"`
+	ID              uint      `gorm:"primaryKey" json:"id"`
+	PostID          uint      `gorm:"not null" json:"post_id"`
+	AuthorID        uint      `gorm:"not null" json:"author_id"`
+	ParentCommentID *uint     `json:"parent_comment_id"` // Use a pointer for nullable foreign key
+	Content         string    `gorm:"type:text;not null" json:"content"`
+	Upvotes         int       `gorm:"default:0" json:"upvotes"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt         `gorm:"index"`
+	Author          *userclient.ClientUser `json:"author"`
+	Replies         []Comment              `gorm:"foreignKey:ParentCommentID" json:"replies"`
 }
 
 type Reaction struct {
-	gorm.Model
-	PostID uint   `gorm:"index"`
-	UserID uint   `gorm:"index"`
-	Type   string `gorm:"type:varchar(20)"` // e.g., "like", "heart", "upvote", "downvote"
+	ID           uint         `gorm:"primaryKey" json:"id"`
+	PostID       uint         `gorm:"not null"`
+	UserID       uint         `gorm:"not null"`
+	ReactionType ReactionType `gorm:"type:varchar(20);not null"`
+	CreatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 func (p *Post) TableName() string {
-	return "client_content_post" // Distinct table name for client users
+	return "client_content_post"
+}
+func (p *Comment) TableName() string {
+	return "client_comment_post"
+}
+func (p *Reaction) TableName() string {
+	return "client_reaction_post"
 }
 
 func MigrateClientPost(db *gorm.DB) {
-	db.AutoMigrate(&Post{})
+	db.AutoMigrate(&Post{}, &Comment{}, &Reaction{})
 }
