@@ -34,22 +34,27 @@ func SetupRouterAuth02(r *gin.Engine, clientAuthCtrl *auth02.ClientAuthControlle
 	//oauth_config.InitializeClientGitHubOAuthConfig(githubClientID, githubClientSecret, githubRedirectURL)
 
 	api := r.Group("/api")
-	clientAuthRouter := api.Group("/auth02") // Changed to Gin's Group method
+	clientAuthRouter := api.Group("/auth02")
+	{
+		// Public routes (no authentication required)
+		clientAuthRouter.POST("/register", clientAuthControllerWrapper.clientAuthController.RegisterClient) // Gin's POST method
+		clientAuthRouter.POST("/login", clientAuthControllerWrapper.clientAuthController.ClientLogin)       // Gin's POST method
 
-	// Public routes (no authentication required)
-	clientAuthRouter.POST("/register", clientAuthControllerWrapper.clientAuthController.RegisterClient) // Gin's POST method
-	clientAuthRouter.POST("/login", clientAuthControllerWrapper.clientAuthController.ClientLogin)       // Gin's POST method
-
-	// GitHub OAuth routes
-	clientAuthRouter.GET("/github/login", clientAuthControllerWrapper.clientAuthController.GitHubLoginRedirect) // Gin's GET method
-	//clientAuthRouter.GET("/github/callback", clientAuthControllerWrapper.clientAuthController.GitHubCallback(&cfg)) // Gin's GET method
-	clientAuthRouter.GET("/github/callback", func(c *gin.Context) {
-		clientAuthControllerWrapper.clientAuthController.GitHubCallback(c, cfg)
-	})
-	clientAuthRouter.GET("/logout", func(c *gin.Context) {
-		clientAuthControllerWrapper.clientAuthController.ClientLogout(c, cfg)
-	})
-	clientAuthRouter.GET("/profile", clientAuthControllerWrapper.clientAuthController.GetClientProfile)
-	clientAuthRouter.PUT("/profile", clientAuthControllerWrapper.clientAuthController.UpdateClientProfile)
+		// GitHub OAuth routes
+		clientAuthRouter.GET("/github/login", clientAuthControllerWrapper.clientAuthController.GitHubLoginRedirect) // Gin's GET method
+		//clientAuthRouter.GET("/github/callback", clientAuthControllerWrapper.clientAuthController.GitHubCallback(&cfg)) // Gin's GET method
+		clientAuthRouter.GET("/github/callback", func(c *gin.Context) {
+			clientAuthControllerWrapper.clientAuthController.GitHubCallback(c, cfg)
+		})
+		clientAuthRouter.GET("/logout", func(c *gin.Context) {
+			clientAuthControllerWrapper.clientAuthController.ClientLogout(c, cfg)
+		})
+		clientAuthRouter.GET("/profile", clientAuthControllerWrapper.clientAuthController.GetClientProfile)
+		clientAuthRouter.PUT("/profile", clientAuthControllerWrapper.clientAuthController.UpdateClientProfile)
+	}
+	clientprofile := api.Group("client")
+	{
+		clientprofile.GET("/profile/:username", clientAuthControllerWrapper.clientAuthController.GetClientProfileByUsername)
+	}
 
 }

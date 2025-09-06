@@ -71,7 +71,7 @@ func (r *GormPostRepository) GetPostByID(ctx context.Context, id uint) (*Post, e
 }
 
 // GetPostBySlug implements PostRepository.GetPostBySlug
-func (r *GormPostRepository) GetPostBySlug(ctx context.Context, slug string) (*Post, error) {
+func (r *GormPostRepository) GetPostBySlugNOComment(ctx context.Context, slug string) (*Post, error) {
 	var post Post
 
 	// Build the base query with the Where clause and Preload
@@ -82,6 +82,47 @@ func (r *GormPostRepository) GetPostBySlug(ctx context.Context, slug string) (*P
 		})
 
 	// Execute the query
+	result := query.First(&post)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, result.Error
+	}
+	return &post, nil
+}
+func (r *GormPostRepository) GetPostBySlug(ctx context.Context, slug string) (*Post, error) {
+	var post Post
+
+	query := r.db.WithContext(ctx).
+		Where("slug = ?", slug).
+		Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
+		}).
+		// Preload top-level comments (level 1)
+		Preload("Comments", func(db *gorm.DB) *gorm.DB {
+			return db.Where("parent_comment_id IS NULL").
+				Order("created_at desc").
+				Preload("Author", func(db *gorm.DB) *gorm.DB {
+					return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+				}).
+				// Preload replies to top-level comments (level 2)
+				Preload("Replies", func(db *gorm.DB) *gorm.DB {
+					return db.Order("created_at desc").
+						Preload("Author", func(db *gorm.DB) *gorm.DB {
+							return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+						}).
+						// 🟢 Preload replies to replies (level 3)
+						Preload("Replies", func(db *gorm.DB) *gorm.DB {
+							return db.Order("created_at desc").
+								Preload("Author", func(db *gorm.DB) *gorm.DB {
+									return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+								})
+						})
+				})
+		})
+
 	result := query.First(&post)
 
 	if result.Error != nil {
@@ -121,8 +162,22 @@ func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, s
 		Order("created_at DESC").
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
+		}).
+		Preload("Comments", func(db *gorm.DB) *gorm.DB {
+			// Only select comments that have no parent (top-level comments)
+			return db.Where("parent_comment_id IS NULL").
+				Order("created_at desc").
+				Preload("Author", func(db *gorm.DB) *gorm.DB {
+					return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+				}).
+				// Preload replies for each top-level comment
+				Preload("Replies", func(db *gorm.DB) *gorm.DB {
+					return db.Order("created_at desc").
+						Preload("Author", func(db *gorm.DB) *gorm.DB {
+							return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+						})
+				})
 		})
-
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}

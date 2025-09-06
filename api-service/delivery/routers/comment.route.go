@@ -25,7 +25,7 @@ func SetupCommentRouter(r *gin.Engine, commentService commentServices.CommentSer
 	commentHandler := commentControllers.NewCommentHandler(commentService)
 	wrappedCommentController := NewCommentControllerWrapper(commentHandler)
 	api := r.Group("/api")
-	postsGroup := api.Group("/posts/:postID")
+	postsGroup := api.Group("/m/:postID")
 	{
 		commentsGroup := postsGroup.Group("/comments")
 		{

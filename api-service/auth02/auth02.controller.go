@@ -276,9 +276,33 @@ func (ctrl *ClientAuthController) GetClientProfile(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
 		return
 	}
+	utils.InfoLog(map[string]interface{}{"user_id": userID}, "Get Client Profile")
 
-	c.JSON(http.StatusOK, userDTO)
-	utils.LoggerRequest(map[string]interface{}{"user_id": userID}, "Get Client Profile", fmt.Sprintf("Retrieved profile for client ID %d", userID))
+	utils.SuccessResponse(c, http.StatusOK, userDTO, "success")
+
+}
+func (ctrl *ClientAuthController) GetClientProfileByUsername(c *gin.Context) {
+	username, exists := c.Params.Get("username")
+	if !exists {
+		utils.ErrorLog(nil, "User ID not found in Gin context for GetClientProfile")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID missing from context"})
+		return
+	}
+
+	userDTO, err := ctrl.clientAuthService.GetClientProfileByUsername(username)
+	if err != nil {
+		utils.ErrorLog(map[string]interface{}{"error": err.Error()}, fmt.Sprintf("Failed to retrieve profile for client ID %d", username))
+		if err.Error() == fmt.Sprintf("client user not found with ID: %d", username) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Client user not found"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
+		return
+	}
+	utils.InfoLog(map[string]interface{}{"user_id": username}, "Get Client Profile")
+
+	utils.SuccessResponse(c, http.StatusOK, userDTO, "success")
+
 }
 
 // UpdateClientProfile handles updating a client user's profile.

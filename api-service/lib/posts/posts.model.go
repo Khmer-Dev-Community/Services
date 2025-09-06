@@ -31,7 +31,7 @@ type Post struct {
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 
-	Comments  []Comment  `json:"comments" gorm:"foreignKey:PostID"`
+	Comments  []Comment  `json:"discussion" gorm:"foreignKey:PostID"`
 	Reactions []Reaction `json:"reactions" gorm:"foreignKey:PostID"`
 }
 

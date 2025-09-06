@@ -26,7 +26,7 @@ func NewClientProfileControllerWrapper(cac *auth02.ClientAuthController) *Client
 func SetupRouterClientAuth(r *mux.Router, ClientProfileCtrl *auth02.ClientAuthController) { // <--- CHANGED SIGNATURE
 
 	//ClientProfileControllerWrapper := NewClientProfileControllerWrapper(ClientProfileCtrl)
-	// Define API routes
+
 	//api := r.PathPrefix("/api").Subrouter()
 
 	//ClientProfileRouter := api.PathPrefix("/kdc").Subrouter()

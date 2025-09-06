@@ -25,6 +25,7 @@ var whitelist = map[string]bool{
 	"/api/posts/list":                          true,
 	"/api/posts/v/:id":                         true,
 	"/api/posts/p/:slug":                       true,
+	"/api/posts/:slug":                         true,
 	"/api/auth02/github/login":                 true,
 	"/api/auth02/logout":                       true,
 	"/api/account/auth02/github/login":         true,
@@ -43,7 +44,7 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:3000", "http://192.168.50.102:8080"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -54,5 +55,6 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	routers.SetupRouter(r, s.User)
 	routers.SetupRouterAuth02(r, s.Auth02, &cfg.Github)
 	routers.SetupPostRouter(r, s.Posts)
+	routers.SetupCommentRouter(r, s.Comments)
 	return r
 }

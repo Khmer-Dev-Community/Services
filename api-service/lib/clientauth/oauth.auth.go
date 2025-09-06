@@ -278,6 +278,17 @@ func (s *ClientAuthService) GetClientProfile(userID uint) (*userclient.ClientUse
 	return userclient.ToClientUserResponseDTO(user), nil
 }
 
+// Get profile by Username
+func (s *ClientAuthService) GetClientProfileByUsername(username string) (*userclient.ClientUserResponseDTO, error) {
+	user, err := s.clientUserRepo.GetClientUserByUsername(username)
+	if err != nil {
+		utils.WarnLog(username, fmt.Sprintf("Failed to get client profile for ID %s: %v", username, err))
+		return nil, err
+	}
+	utils.InfoLog(user.ID, fmt.Sprintf("Successfully retrieved client profile for ID: %s", username))
+	return userclient.ToClientUserResponseDTO(user), nil
+}
+
 // UpdateClientProfile updates a client user's profile.
 func (s *ClientAuthService) UpdateClientProfile(userID uint, dto *userclient.ClientUpdateRequestDTO) (*userclient.ClientUserResponseDTO, error) {
 	utils.LoggerService(userID, fmt.Sprintf("Attempting to update client profile for ID: %d", userID), logrus.InfoLevel)

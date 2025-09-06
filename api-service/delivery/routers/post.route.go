@@ -27,7 +27,7 @@ func SetupPostRouter(r *gin.Engine, postService postServices.PostService) { // C
 	publicPostRoutes := api.Group("/posts") // Changed to Gin's Group method
 	publicPostRoutes.GET("/list", wrappedPostController.controller.ListPosts)
 	publicPostRoutes.GET("/v/:id", wrappedPostController.controller.GetPostByID)
-	publicPostRoutes.GET("/slug/:slug", wrappedPostController.controller.GetPostBySlug)
+	publicPostRoutes.GET("/:slug", wrappedPostController.controller.GetPostBySlug)
 	authenticatedPostRoutes := api.Group("/posts")
 
 	authenticatedPostRoutes.POST("/create", wrappedPostController.controller.CreatePost)
