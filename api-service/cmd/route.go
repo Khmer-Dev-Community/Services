@@ -26,6 +26,7 @@ var whitelist = map[string]bool{
 	"/api/posts/v/:id":                         true,
 	"/api/posts/p/:slug":                       true,
 	"/api/posts/:slug":                         true,
+	"/api/client/profile/:username":            true,
 	"/api/auth02/github/login":                 true,
 	"/api/auth02/logout":                       true,
 	"/api/account/auth02/github/login":         true,
