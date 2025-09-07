@@ -99,6 +99,8 @@ func ToPostResponse(post Post) PostResponse {
 		Author:           authorResponse,
 		Comments:         commentResponses,
 		Reaction:         reactionResponses,
+		Meta:             post.Meta,
+		Link:             post.Link,
 		Tags:             tagsArray,
 		Status:           post.Status,
 		CreatedAt:        post.CreatedAt,
@@ -181,7 +183,6 @@ func ToPostModel(req CreatePostRequest, authorID uint, generatedSlug string) Pos
 func UpdatePostModel(post *Post, req UpdatePostRequest, updatedSlug *string) {
 	if req.Title != nil {
 		post.Title = *req.Title
-		// If title changed and an updatedSlug is provided by the service, use it
 		if updatedSlug != nil {
 			post.Slug = *updatedSlug
 		}
@@ -197,6 +198,12 @@ func UpdatePostModel(post *Post, req UpdatePostRequest, updatedSlug *string) {
 	}
 	if req.Status != nil {
 		post.Status = *req.Status
+	}
+	if req.Meta != "" {
+		post.Meta = req.Meta
+	}
+	if req.Link != "" {
+		post.Link = req.Link
 	}
 }
 

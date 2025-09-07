@@ -138,6 +138,14 @@ func (h *PostControllerHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
+	if authUserID != req.AuthorID {
+		utils.ErrorLog(nil, "Internal Server Error: User fake update content")
+		//c.JSON(http.StatusNotFound, gin.H{"message": "content not found"})
+		utils.ErrorResponse(c, http.StatusNotFound, "request not found", nil)
+
+		return
+	}
+
 	postResponse, err := h.service.UpdatePost(c.Request.Context(), uint(id), req, authUserID)
 	if err != nil {
 		if errors.Is(err, posts.ErrPostNotFound) {
@@ -215,6 +223,7 @@ func (h *PostControllerHandler) ListPosts(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "10")
 	status := c.DefaultQuery("status", "") // Empty string for no status filter
 	tag := c.DefaultQuery("tag", "")       // Empty string for no tag filter
+	account := c.DefaultQuery("profile", "")
 
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
@@ -229,7 +238,7 @@ func (h *PostControllerHandler) ListPosts(c *gin.Context) {
 		return
 	}
 
-	posts, totalCount, err := h.service.ListPosts(c.Request.Context(), offset, limit, status, tag)
+	posts, totalCount, err := h.service.ListPosts(c.Request.Context(), offset, limit, status, tag, account)
 	if err != nil {
 		utils.ErrorLog(map[string]interface{}{"offset": offset, "limit": limit, "status": status, "tag": tag, "error": err.Error()}, "Service error listing posts")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve posts"})

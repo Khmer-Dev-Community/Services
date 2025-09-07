@@ -11,6 +11,8 @@ type PostResponse struct {
 	Title            string                             `json:"title"`
 	Slug             string                             `json:"slug"`
 	Description      string                             `json:"description"`
+	Meta             string                             `json:"meta"`
+	Link             string                             `json:"link"`
 	ViewCount        uint                               `json:"view_count"`
 	FeaturedImageURL string                             `json:"featured_image_url"`
 	AuthorID         uint                               `json:"author_id"`
@@ -29,15 +31,22 @@ type CreatePostRequest struct {
 	FeaturedImageURL string   `json:"featured_image_url"`
 	Tags             []string `json:"tags"`
 	Status           string   `json:"status" binding:"omitempty,oneof=draft published archived"`
+	Meta             string   `json:"meta"`
+	Link             string   `json:"link"`
+	AuthorID         uint     `json:"author_id"`
 }
 
 type UpdatePostRequest struct {
+	ID               uint     `json:"id"`
 	Title            *string  `json:"title"`
 	Slug             *string  `json:"slug"`
 	Description      *string  `json:"description"`
 	FeaturedImageURL *string  `json:"featured_image_url"`
 	Tags             []string `json:"tags"`
 	Status           *string  `json:"status" binding:"omitempty,oneof=draft published archived"`
+	Meta             string   `json:"meta"`
+	Link             string   `json:"link"`
+	AuthorID         uint     `json:"author_id"`
 }
 
 type CommentResponse struct {

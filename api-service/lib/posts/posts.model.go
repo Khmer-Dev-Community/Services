@@ -20,6 +20,8 @@ type Post struct {
 	ID               uint                   `gorm:"primaryKey"`
 	Title            string                 `json:"title" gorm:"type:varchar(255);not null"`
 	Slug             string                 `json:"slug" gorm:"type:varchar(255);uniqueIndex"`
+	Meta             string                 `json:"meta" gorm:"type:varchar(300)"`
+	Link             string                 `json:"link" gorm:"type:varchar(80)"`
 	Description      string                 `json:"description" gorm:"type:text;not null"`
 	ViewCount        uint                   `json:"view_count" gorm:"default:0"`
 	FeaturedImageURL string                 `json:"featured_image_url" gorm:"type:varchar(255)"`

@@ -17,7 +17,7 @@ type PostRepository interface {
 	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 	UpdatePost(ctx context.Context, post *Post) error
 	DeletePost(ctx context.Context, id uint) error
-	ListPosts(ctx context.Context, offset, limit int, status, tag string) ([]Post, error)
+	ListPosts(ctx context.Context, offset, limit int, status, tag string, username string) ([]Post, error)
 	CountPosts(ctx context.Context, status, tag string) (int64, error)
 	IncrementPostViewCount(ctx context.Context, id uint) error
 }
@@ -150,12 +150,11 @@ func (r *GormPostRepository) DeletePost(ctx context.Context, id uint) error {
 }
 
 // ListPosts implements PostRepository.ListPosts
-func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, status, tag string) ([]Post, error) {
+func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, status, tag string, account string) ([]Post, error) {
 	var posts []Post
-	if limit > 50 {
-		limit = 50
+	if limit >= 25 {
+		limit = 25
 	}
-
 	query := r.db.WithContext(ctx).
 		Offset(offset).
 		Limit(limit).
@@ -183,6 +182,11 @@ func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, s
 	}
 	if tag != "" {
 		query = query.Where("tags LIKE ?", "%"+tag+"%")
+	}
+	// --- NEW LOGIC TO FILTER BY AUTHOR USERNAME ---
+	if account != "" {
+		query = query.Joins("JOIN client_platform_user ON client_platform_user.id = client_content_post.author_id").
+			Where("client_platform_user.username = ?", account)
 	}
 
 	result := query.Find(&posts)
