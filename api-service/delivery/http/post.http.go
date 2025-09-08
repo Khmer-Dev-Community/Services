@@ -221,10 +221,39 @@ func (h *PostControllerHandler) DeletePost(c *gin.Context) {
 func (h *PostControllerHandler) ListPosts(c *gin.Context) {
 	offsetStr := c.DefaultQuery("offset", "0")
 	limitStr := c.DefaultQuery("limit", "10")
-	status := c.DefaultQuery("status", "") // Empty string for no status filter
-	tag := c.DefaultQuery("tag", "")       // Empty string for no tag filter
+	status := c.DefaultQuery("status", "")
+	tag := c.DefaultQuery("tag", "")
 	account := c.DefaultQuery("profile", "")
 
+	var authUserID uint
+
+	// First, try to get the viewer ID from the 'v' query parameter.
+	vStr := c.DefaultQuery("v", "0")
+	viewerId, err := strconv.Atoi(vStr)
+	if err != nil || viewerId < 0 {
+		// If 'v' is invalid or negative, log an error but continue with 0.
+		utils.ErrorLog(map[string]interface{}{"query_param": vStr}, "Invalid viewer ID format. Defaulting to 0.")
+		viewerId = 0
+	}
+
+	// If 'v' is present and a valid positive integer, prioritize it.
+	if viewerId > 0 {
+		authUserID = uint(viewerId)
+	} else {
+		// If 'v' is 0 or not provided, try to get the ID from the authenticated user's context.
+		cookieID, exists := c.Get("userID")
+		if exists {
+			if extractID, ok := cookieID.(uint); ok {
+				authUserID = extractID
+			} else {
+				// Log a warning if the context value is not the expected type.
+				utils.ErrorLog(nil, "UserID in context is not of type uint")
+				// authUserID remains 0
+			}
+		}
+	}
+
+	// Parse the offset and limit from the query parameters.
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
 		utils.LoggerRequest(map[string]interface{}{"offset_param": offsetStr}, "Invalid offset format", "Bad request: Invalid offset parameter")
@@ -238,13 +267,15 @@ func (h *PostControllerHandler) ListPosts(c *gin.Context) {
 		return
 	}
 
-	posts, totalCount, err := h.service.ListPosts(c.Request.Context(), offset, limit, status, tag, account)
+	// Call the service layer to list posts with the determined user ID.
+	posts, totalCount, err := h.service.ListPosts(c.Request.Context(), offset, limit, status, tag, account, authUserID)
 	if err != nil {
 		utils.ErrorLog(map[string]interface{}{"offset": offset, "limit": limit, "status": status, "tag": tag, "error": err.Error()}, "Service error listing posts")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve posts"})
 		return
 	}
 
+	// Log the successful request and send the response.
 	utils.LoggerRequest(map[string]interface{}{"offset": offset, "limit": limit, "status": status, "tag": tag, "count": len(posts), "total": totalCount}, "Posts listed successfully", "Posts retrieved")
 	utils.SuccessResponsePage(c, http.StatusOK, posts, int(totalCount), offset, offset, "Success")
 }

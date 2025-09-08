@@ -17,7 +17,7 @@ type PostRepository interface {
 	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 	UpdatePost(ctx context.Context, post *Post) error
 	DeletePost(ctx context.Context, id uint) error
-	ListPosts(ctx context.Context, offset, limit int, status, tag string, username string) ([]Post, error)
+	ListPosts(ctx context.Context, offset, limit int, status, tag string, username string, viewerId uint) ([]Post, error)
 	CountPosts(ctx context.Context, status, tag string) (int64, error)
 	IncrementPostViewCount(ctx context.Context, id uint) error
 }
@@ -113,7 +113,6 @@ func (r *GormPostRepository) GetPostBySlug(ctx context.Context, slug string) (*P
 						Preload("Author", func(db *gorm.DB) *gorm.DB {
 							return db.Select("id", "avatar_url", "first_name", "last_name", "username")
 						}).
-						// 🟢 Preload replies to replies (level 3)
 						Preload("Replies", func(db *gorm.DB) *gorm.DB {
 							return db.Order("created_at desc").
 								Preload("Author", func(db *gorm.DB) *gorm.DB {
@@ -150,46 +149,60 @@ func (r *GormPostRepository) DeletePost(ctx context.Context, id uint) error {
 }
 
 // ListPosts implements PostRepository.ListPosts
-func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, status, tag string, account string) ([]Post, error) {
+func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, status, tag string, account string, vewerId uint) ([]Post, error) {
 	var posts []Post
 	if limit >= 25 {
 		limit = 25
 	}
+	utils.WarnLog(vewerId, " viewer Id")
+	// Build the query and apply all conditions first
 	query := r.db.WithContext(ctx).
 		Offset(offset).
 		Limit(limit).
-		Order("created_at DESC").
+		Order("client_content_post.created_at DESC").
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "avatar_url", "first_name", "last_name", "username", "likes", "follower", "following")
 		}).
 		Preload("Comments", func(db *gorm.DB) *gorm.DB {
-			// Only select comments that have no parent (top-level comments)
 			return db.Where("parent_comment_id IS NULL").
 				Order("created_at desc").
 				Preload("Author", func(db *gorm.DB) *gorm.DB {
 					return db.Select("id", "avatar_url", "first_name", "last_name", "username")
 				}).
-				// Preload replies for each top-level comment
 				Preload("Replies", func(db *gorm.DB) *gorm.DB {
 					return db.Order("created_at desc").
 						Preload("Author", func(db *gorm.DB) *gorm.DB {
 							return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+						}).
+						Preload("Replies", func(db *gorm.DB) *gorm.DB {
+							return db.Order("created_at desc").
+								Preload("Author", func(db *gorm.DB) *gorm.DB {
+									return db.Select("id", "avatar_url", "first_name", "last_name", "username")
+								})
 						})
 				})
+		}).
+		Preload("Reactions", func(db *gorm.DB) *gorm.DB {
+			return db.Where("client_reaction_post.user_id=?", vewerId)
 		})
+
+	// Apply the conditional WHERE clauses to the query builder
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("client_content_post.status = ?", status)
 	}
 	if tag != "" {
-		query = query.Where("tags LIKE ?", "%"+tag+"%")
+		query = query.Where("client_content_post.tags LIKE ?", "%"+tag+"%")
 	}
-	// --- NEW LOGIC TO FILTER BY AUTHOR USERNAME ---
 	if account != "" {
 		query = query.Joins("JOIN client_platform_user ON client_platform_user.id = client_content_post.author_id").
 			Where("client_platform_user.username = ?", account)
 	}
 
-	result := query.Find(&posts)
+	// Now, apply the final Select and Find
+	result := query.
+		Select("*, (SELECT COUNT(*) FROM client_reaction_post WHERE client_reaction_post.post_id = client_content_post.id) AS reaction_count").
+		Find(&posts)
+
 	return posts, result.Error
 }
 

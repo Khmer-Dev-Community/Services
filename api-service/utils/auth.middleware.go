@@ -45,10 +45,16 @@ func IsWhitelisted(path string, whitelist map[string]bool) bool {
 func AuthMiddlewareWithWhiteList(whitelist map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. Check for whitelisted paths first
+
 		fullRoute := c.FullPath()
 		if IsWhitelisted(fullRoute, whitelist) || c.Request.Method == http.MethodOptions {
-			c.Next()
-			return
+			if cookie, err := c.Cookie("kdc.secure.token"); err == nil && cookie != "" {
+
+			} else {
+				c.Next()
+				return
+			}
+
 		}
 
 		// 2. Extract JWT from either a cookie or the Authorization header

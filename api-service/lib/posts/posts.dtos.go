@@ -19,6 +19,7 @@ type PostResponse struct {
 	Author           userclient.ClientUserResponseInfor `json:"author"`
 	Comments         []CommentResponse                  `json:"discussion"`
 	Reaction         []ReactionResponse                 `json:"reaction"`
+	ReactCount       uint                               `json:"reaction_count"`
 	Tags             []string                           `json:"tags"`
 	Status           string                             `json:"status"`
 	CreatedAt        time.Time                          `json:"created_at"`

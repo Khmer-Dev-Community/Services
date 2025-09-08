@@ -22,7 +22,7 @@ type PostService interface {
 	GetPostBySlug(ctx context.Context, slug string) (*PostResponse, error)
 	UpdatePost(ctx context.Context, id uint, req UpdatePostRequest, userID uint) (*PostResponse, error)
 	DeletePost(ctx context.Context, id uint, userID uint) error
-	ListPosts(ctx context.Context, offset, limit int, status, tag string, account string) ([]PostResponse, int64, error)
+	ListPosts(ctx context.Context, offset, limit int, status, tag string, account string, viewerId uint) ([]PostResponse, int64, error)
 }
 
 type postService struct {
@@ -170,7 +170,7 @@ func (s *postService) DeletePost(ctx context.Context, id uint, userID uint) erro
 	return nil
 }
 
-func (s *postService) ListPosts(ctx context.Context, offset, limit int, status, tag string, account string) ([]PostResponse, int64, error) {
+func (s *postService) ListPosts(ctx context.Context, offset, limit int, status, tag string, account string, viewerId uint) ([]PostResponse, int64, error) {
 	if limit <= 0 || limit > 100 {
 		utils.WarnLog(map[string]interface{}{"requested_limit": limit, "defaulting_to": 100}, "Invalid limit for listing posts, defaulting to 100")
 		limit = 100 // Set to a sensible default, maybe your default is different
@@ -180,7 +180,7 @@ func (s *postService) ListPosts(ctx context.Context, offset, limit int, status, 
 		offset = 0
 	}
 
-	posts, err := s.repo.ListPosts(ctx, offset, limit, status, tag, account)
+	posts, err := s.repo.ListPosts(ctx, offset, limit, status, tag, account, viewerId)
 	if err != nil {
 		utils.ErrorLog(map[string]interface{}{"offset": offset, "limit": limit, "status": status, "tag": tag, "error": err.Error()}, "Failed to list posts from repository")
 		return nil, 0, fmt.Errorf("service: failed to list posts: %w", err)
