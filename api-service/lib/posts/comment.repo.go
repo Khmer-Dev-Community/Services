@@ -27,7 +27,11 @@ func (r *GormCommentRepository) CreateComment(ctx context.Context, post *Comment
 		utils.LoggerRepository(err, "Execute")
 		return nil, err
 	}
-
+	if err := r.db.Model(&Post{}).
+		Where("id = ?", post.PostID).
+		Update("comment_count", gorm.Expr("comment_count + ?", 1)).Error; err != nil {
+		return nil, err
+	}
 	utils.LoggerRepository(post, "Execute")
 	return post, nil
 }

@@ -20,6 +20,7 @@ type PostResponse struct {
 	Comments         []CommentResponse                  `json:"discussion"`
 	Reaction         []ReactionResponse                 `json:"reaction"`
 	ReactCount       uint                               `json:"reaction_count"`
+	CommentCount     uint                               `json:"comment_count"`
 	Tags             []string                           `json:"tags"`
 	Status           string                             `json:"status"`
 	CreatedAt        time.Time                          `json:"created_at"`

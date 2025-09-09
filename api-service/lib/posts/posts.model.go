@@ -35,7 +35,8 @@ type Post struct {
 
 	Comments      []Comment  `json:"discussion" gorm:"foreignKey:PostID"`
 	Reactions     []Reaction `json:"reactions" gorm:"foreignKey:PostID"`
-	ReactionCount int64      `json:"reaction_count" gorm:"-"`
+	ReactionCount uint       `json:"reaction_count" gorm:"default:0" `
+	CommentCount  uint       `json:"comment_count" gorm:"default:0" `
 }
 
 type Comment struct {
@@ -54,9 +55,9 @@ type Comment struct {
 
 type Reaction struct {
 	ID           uint         `gorm:"primaryKey" json:"id"`
-	PostID       uint         `gorm:"not null"`
-	UserID       uint         `gorm:"not null"`
-	ReactionType ReactionType `gorm:"type:varchar(20);not null"`
+	PostID       uint         `json:"post_id" gorm:"not null"`
+	UserID       uint         `json:"user_id" gorm:"not null"`
+	ReactionType ReactionType `json:"reaction_type" gorm:"type:varchar(20);not null"`
 	CreatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 	"websocket-service/config"
 	"websocket-service/gateway"
+	"websocket-service/rabbitmq"
 	"websocket-service/utils"
 
 	"github.com/sirupsen/logrus"
@@ -22,11 +23,19 @@ func main() {
 
 	// Assuming InitConfig and config package are correctly defined elsewhere
 	cfg, err := InitConfig("config/config.yml")
-	logger.Print("Initialization Database") // This log seems misplaced, should be after successful DB init
 	if err != nil {
 		logger.Fatalf("Initialization error: %v", err)
 	}
 	utils.InitializeLogger(cfg.Service.LogPtah)
+	logger.Print("Initialization Database")
+
+	// Initialize RabbitMQ first.
+	if err := rabbitmq.InitializeRabbitMQ(cfg.RabbitMQURL); err != nil {
+		logger.Fatalf("Failed to initialize RabbitMQ: %v", err)
+	}
+	defer rabbitmq.RMQ.Close() // Defer the close after a successful connection
+
+	// Create the Socket.IO server.
 	socketIOServer := gateway.CreateServer()
 	go func() {
 		if err := socketIOServer.Serve(); err != nil {
@@ -34,6 +43,14 @@ func main() {
 		}
 	}()
 	defer socketIOServer.Close()
+
+	// Start the RabbitMQ consumer as a goroutine.
+	// The gateway's consumer function will use the initialized rabbitmq.RMQ object.
+	go func() {
+		if err := gateway.StartRabbitMQConsumer(socketIOServer); err != nil {
+			logger.Fatalf("Failed to start RabbitMQ consumer: %v", err)
+		}
+	}()
 
 	mux := http.NewServeMux()
 	// Handle Socket.IO connections on both /socket.io/ and /ws/ paths
@@ -46,7 +63,7 @@ func main() {
 	})
 
 	httpServer := &http.Server{
-		Addr:    ":" + cfg.Service.Port, // Dynamically use port from config
+		Addr:    ":" + cfg.Service.Port,
 		Handler: mux,
 	}
 
@@ -54,7 +71,8 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Println("      \n                   *       \n.         *        *        *\n.        ***     **=**     ***\n        *\"\"\"*   *|***|*   *\"\"\"*\n       *|***|*  *|*+*|*  *|***|*\n**********\"\"\"*___*//+\\\\*___*\"\"\"*********\n@@@@@@@@@@@@@@@@//   \\\\@@@@@@@@@@@@@@@@@\n###############||ព្រះពុទ្ធ||#################\nTTTTTTTTTTTTTTT||ព្រះធម័||TTTTTTTTTTTTTTTTT\n------------- -//ព្រះសង្ឃ\\\\----------------\n៚ សូមប្រោសប្រទានពរឱ្យប្រតិប័ត្តិការណ៍ប្រព្រឹត្តទៅជាធម្មតា ៚ \n ៚ ជោគជ័យ      ៚សិរីសួរស្តី       ៚សុវត្តិភាព \n_________________________________________\n៚  Application Service is Running Port: " + cfg.Service.Port)
+		log.Println("      \n                   * \n.         * *A* *\n.        *A* **=** *A*\n        *\"\"\"* *|\"\"\"|* *\"\"\"*\n       *|***|* *|*+*|* *|***|*\n*********\"\"\"*___*//+\\\\*___*\"\"\"*********\n@@@@@@@@@@@@@@@@//   \\\\@@@@@@@@@@@@@@@@@\n###############||ព្រះពុទ្ធ||#################\nTTTTTTTTTTTTTTT||ព្រះធម័||TTTTTTTTTTTTTTTTT\nLLLLLLLLLLLLLL//ព្រះសង្ឃ\\\\LLLLLLLLLLLLLLLLL\n៚ សូមប្រោសប្រទានពរឱ្យប្រតិប័ត្តិការណ៍ប្រព្រឹត្តទៅជាធម្មតា ៚ \n៚ ជោគជ័យ   //  ៚សិរីសួរស្តី \\\\   ៚សុវត្តិភាព \n___________//___៚(♨️)៚__\\\\____________\n៚Application Service is Running Port: 80 ")
+		log.Println("Application Service is Running Port: " + cfg.Service.Port)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatalf("Could not listen on %s: %v\n", httpServer.Addr, err)
 		}
@@ -72,7 +90,6 @@ func main() {
 }
 
 // InitConfig is assumed to be defined in your config package
-// and handles loading configuration from a YAML file.
 func InitConfig(configPath string) (config.Config, error) {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {

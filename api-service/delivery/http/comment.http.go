@@ -35,10 +35,20 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 		utils.ErrorLog(err, "CreateComment")
 		return
 	}
-
 	newComment.PostID = uint(postID)
-	// Placeholder for authenticated user ID from context
-	newComment.AuthorID = 1
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorLog(nil, "Unauthorized: UserID not found in context for post deletion")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	authUserID, ok := userID.(uint)
+	if !ok {
+		utils.ErrorLog(nil, "Internal Server Error: UserID in context is not of type uint")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	newComment.AuthorID = authUserID
 
 	createdComment, err := h.service.CreateComment(c.Request.Context(), &newComment)
 	if err != nil {

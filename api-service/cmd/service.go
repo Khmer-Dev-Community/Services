@@ -29,6 +29,7 @@ type Services struct {
 	Config     *config.Config
 	Posts      posts.PostService
 	Comments   posts.CommentService
+	Reaction   posts.ReactionService
 }
 
 func InitServices(db *gorm.DB, cfg *config.Config) *Services {
@@ -46,5 +47,6 @@ func InitServices(db *gorm.DB, cfg *config.Config) *Services {
 		Config:     cfg,
 		Posts:      posts.NewPostService(posts.NewGormPostRepository(db)),
 		Comments:   posts.NewGormCommentService(posts.NewGormCommentRepository(db)),
+		Reaction:   posts.NewReactionService(posts.NewGormReactionRepository(db)),
 	}
 }

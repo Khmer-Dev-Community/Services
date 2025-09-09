@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Khmer-Dev-Community/Services/api-service/config"
+	"github.com/Khmer-Dev-Community/Services/api-service/delivery/rabbitmq"
 	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 
 	"gorm.io/gorm"
@@ -22,7 +23,11 @@ func InitConfigAndDatabase() (config.Config, *gorm.DB) {
 	if err := config.InitRedis(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password); err != nil {
 		log.Fatalf("Failed to initialize Redis: %v", err)
 	}
-
+	// Initialize RabbitMQ first.
+	if err := rabbitmq.InitializeRabbitMQ(cfg.RabbitMQURL); err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ: %v", err)
+	}
+	defer rabbitmq.RMQ.Close() // Defer the close after a successful connection
 	utils.InitializeLogger(cfg.Service.LogPtah)
 
 	loc, err := time.LoadLocation(cfg.Service.TimeZone)

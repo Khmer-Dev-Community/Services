@@ -11,7 +11,7 @@ redis:
   port: 6379
   password:
 secret_key: uhbi49y823ry78923ijrgu803289u3ui23
-RabbitMQURL: "amqp://admin:admin@pwd@127.0.0.1:5672/"
+RabbitMQURL: "amqp://admin:admin@192.168.50.102:5672/"
 
 service:
   port: 80

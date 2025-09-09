@@ -199,9 +199,9 @@ func (r *GormPostRepository) ListPosts(ctx context.Context, offset, limit int, s
 	}
 
 	// Now, apply the final Select and Find
-	result := query.
-		Select("*, (SELECT COUNT(*) FROM client_reaction_post WHERE client_reaction_post.post_id = client_content_post.id) AS reaction_count").
-		Find(&posts)
+	result := query.Find(&posts)
+	//	Select("*, (SELECT COUNT(*) FROM client_reaction_post WHERE client_reaction_post.post_id = client_content_post.id) AS reaction_count").
+	//	Find(&posts)
 
 	return posts, result.Error
 }

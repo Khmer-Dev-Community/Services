@@ -1,8 +1,11 @@
 package main
 
 import (
+	"log"
+
 	_ "github.com/Khmer-Dev-Community/Services/api-service/cmd/docs"
 	"github.com/Khmer-Dev-Community/Services/api-service/config"
+	"github.com/Khmer-Dev-Community/Services/api-service/delivery/rabbitmq"
 	routers "github.com/Khmer-Dev-Community/Services/api-service/delivery/routers"
 	"github.com/Khmer-Dev-Community/Services/api-service/utils"
 	"github.com/gin-contrib/cors"
@@ -42,6 +45,13 @@ var whitelist = map[string]bool{
 }
 
 func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
+	// Initialize RabbitMQ first.
+	if err := rabbitmq.InitializeRabbitMQ(cfg.RabbitMQURL); err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ: %v", err)
+	}
+	eventPublisher := rabbitmq.NewEventPublisher()
+	defer rabbitmq.RMQ.Close()
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -57,5 +67,6 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	routers.SetupRouterAuth02(r, s.Auth02, &cfg.Github)
 	routers.SetupPostRouter(r, s.Posts)
 	routers.SetupCommentRouter(r, s.Comments)
+	routers.SetupReactionRouter(r, s.Reaction, eventPublisher)
 	return r
 }

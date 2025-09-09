@@ -100,6 +100,7 @@ func ToPostResponse(post Post) PostResponse {
 		Comments:         commentResponses,
 		Reaction:         reactionResponses,
 		ReactCount:       uint(post.ReactionCount),
+		CommentCount:     uint(post.CommentCount),
 		Meta:             post.Meta,
 		Link:             post.Link,
 		Tags:             tagsArray,

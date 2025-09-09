@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -12,14 +13,16 @@ import (
 type RabbitMQ struct {
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
+	URL        string // Store URL for reconnection
 }
 
-var RMQ *RabbitMQ // Package-level variable to hold RabbitMQ connection
+var RMQ *RabbitMQ
+
 type Controller interface {
 	HandleMessage(msg amqp.Delivery, channel *amqp.Channel)
 }
 
-// InitializeRabbitMQ initializes RabbitMQ connection
+// InitializeRabbitMQ establishes the initial connection and starts the reconnection handler.
 func InitializeRabbitMQ(url string) error {
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -35,9 +38,53 @@ func InitializeRabbitMQ(url string) error {
 	RMQ = &RabbitMQ{
 		Connection: conn,
 		Channel:    channel,
+		URL:        url, // Store the URL for the reconnection logic
 	}
+
+	// Start a goroutine to handle automatic reconnection.
+	go RMQ.handleReconnect()
+
 	fmt.Println(" RabbitMQ Connected")
 	return nil
+}
+
+// handleReconnect listens for connection closure and attempts to reconnect.
+func (rmq *RabbitMQ) handleReconnect() {
+	// NotifyClose returns a channel that receives a message when the connection is closed.
+	closeChan := make(chan *amqp.Error)
+	rmq.Connection.NotifyClose(closeChan)
+
+	// This blocks until the connection is closed.
+	err := <-closeChan
+	if err != nil {
+		logrus.Errorf("RabbitMQ connection closed. Reason: %v. Attempting to reconnect...", err)
+	}
+
+	for {
+		conn, err := amqp.Dial(rmq.URL)
+		if err == nil {
+			ch, err := conn.Channel()
+			if err == nil {
+				logrus.Infoln("RabbitMQ reconnected successfully.")
+				rmq.Connection = conn
+				rmq.Channel = ch
+				// Start a new listener on the new connection and exit the loop.
+				go rmq.handleReconnect()
+				return
+			}
+		}
+
+		logrus.Warnf("Failed to reconnect to RabbitMQ. Retrying in 5 seconds...")
+		time.Sleep(5 * time.Second)
+	}
+}
+
+// Close gracefully closes the RabbitMQ connection.
+func (rmq *RabbitMQ) Close() {
+	if rmq.Connection != nil && !rmq.Connection.IsClosed() {
+		rmq.Connection.Close()
+		log.Println("RabbitMQ connection closed.")
+	}
 }
 
 // DeclareQueue declares a queue
@@ -98,21 +145,6 @@ func (rmq *RabbitMQ) DeleteQueue(queueName string) error {
 		false,     // noWait
 	)
 	return err
-}
-
-// Close closes the RabbitMQ connection and channel
-func (rmq *RabbitMQ) Close() error {
-	if rmq.Connection != nil {
-		if err := rmq.Connection.Close(); err != nil {
-			return err
-		}
-	}
-	if rmq.Channel != nil {
-		if err := rmq.Channel.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // DeclareExchange declares an exchange in RabbitMQ.
