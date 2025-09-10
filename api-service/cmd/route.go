@@ -68,5 +68,6 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	routers.SetupPostRouter(r, s.Posts)
 	routers.SetupCommentRouter(r, s.Comments)
 	routers.SetupReactionRouter(r, s.Reaction, eventPublisher)
+	routers.SetupSavePostRouter(r, s.SavePost)
 	return r
 }

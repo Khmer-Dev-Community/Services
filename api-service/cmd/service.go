@@ -30,6 +30,7 @@ type Services struct {
 	Posts      posts.PostService
 	Comments   posts.CommentService
 	Reaction   posts.ReactionService
+	SavePost   posts.SavedPostServiceImpl
 }
 
 func InitServices(db *gorm.DB, cfg *config.Config) *Services {
@@ -48,5 +49,6 @@ func InitServices(db *gorm.DB, cfg *config.Config) *Services {
 		Posts:      posts.NewPostService(posts.NewGormPostRepository(db)),
 		Comments:   posts.NewGormCommentService(posts.NewGormCommentRepository(db)),
 		Reaction:   posts.NewReactionService(posts.NewGormReactionRepository(db)),
+		SavePost:   *posts.NewSavedPostService(*posts.NewGormSavedPostRepository(db)),
 	}
 }

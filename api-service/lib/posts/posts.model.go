@@ -62,6 +62,16 @@ type Reaction struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
+type SavedPost struct {
+	ID        uint   `gorm:"primaryKey" json:"id"`
+	Username  string `json:"username" gorm:"not null;index:idx_saved_post,unique"`
+	UserID    uint   `gorm:"not null;index:idx_saved_post,unique"`
+	PostID    uint   `gorm:"not null;index:idx_saved_post,unique"`
+	Post      Post   `json:"post" gorm:"foreignKey:PostID"`
+	SavedAt   time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
 func (p *Post) TableName() string {
 	return "client_content_post"
 }
@@ -71,7 +81,9 @@ func (p *Comment) TableName() string {
 func (p *Reaction) TableName() string {
 	return "client_reaction_post"
 }
-
+func (p *SavedPost) TableName() string {
+	return "client_save_post"
+}
 func MigrateClientPost(db *gorm.DB) {
-	db.AutoMigrate(&Post{}, &Comment{}, &Reaction{})
+	db.AutoMigrate(&Post{}, &Comment{}, &Reaction{}, &SavedPost{})
 }

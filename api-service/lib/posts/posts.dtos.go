@@ -70,3 +70,12 @@ type ReactionResponse struct {
 	ReactionType ReactionType `json:"reaction_type"`
 	CreatedAt    time.Time    `json:"created_at"`
 }
+
+type SavePostData struct {
+	ID       uint         `json:"id"`
+	Username string       `json:"username"`
+	PostID   uint         `json:"post_id"`
+	UserID   uint         `json:"user_id"`
+	SavedAt  time.Time    `json:"saved_at"`
+	Post     PostResponse `json:"post"`
+}

@@ -240,3 +240,23 @@ func getDefaultStatus(status string) string {
 	}
 	return status
 }
+
+func ToSavedPostData(savedPost SavedPost) SavePostData {
+	if savedPost.Post.ID == 0 {
+		return SavePostData{
+			ID:      savedPost.ID,
+			PostID:  savedPost.PostID,
+			UserID:  savedPost.UserID,
+			SavedAt: savedPost.SavedAt,
+		}
+	}
+	postResponse := ToPostResponse(savedPost.Post)
+	response := SavePostData{
+		ID:      savedPost.ID,
+		PostID:  savedPost.PostID,
+		UserID:  savedPost.UserID,
+		SavedAt: savedPost.SavedAt,
+		Post:    postResponse,
+	}
+	return response
+}
