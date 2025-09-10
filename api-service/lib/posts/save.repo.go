@@ -29,11 +29,11 @@ func (r *GormSavedPostRepository) Save(ctx context.Context, savedPost *SavedPost
 		utils.InfoLog(result, "Check Post Save")
 		if result.Error == gorm.ErrRecordNotFound {
 			// Case 1: Post is not saved, so create a new record.
-			if err := tx.Unscoped().Create(savedPost).Error; err != nil {
+			if err := tx.Create(savedPost).Error; err != nil {
 				return err
 			}
 		} else {
-			if err := tx.Delete(&existingSavedPost).Error; err != nil {
+			if err := tx.Unscoped().Delete(&existingSavedPost).Error; err != nil {
 				return err
 			}
 		}
