@@ -21,8 +21,8 @@ type SendMessageRequest struct {
 }
 
 var whitelist = map[string]bool{
-	"/api/auth/login":                          true,
-	"/api/auth/logout":                         true,
+	"/api/auth/login": true,
+
 	"/api/auth02/register":                     true,
 	"/api/auth02/login":                        true,
 	"/api/posts/list":                          true,
@@ -69,5 +69,6 @@ func InitRoutes(cfg config.Config, s *Services) *gin.Engine {
 	routers.SetupCommentRouter(r, s.Comments)
 	routers.SetupReactionRouter(r, s.Reaction, eventPublisher)
 	routers.SetupSavePostRouter(r, s.SavePost)
+	routers.SetupAuthRouter(r, s.Auth)
 	return r
 }

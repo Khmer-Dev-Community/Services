@@ -234,8 +234,8 @@ func (ctrl *ClientAuthController) GitHubCallback(c *gin.Context, cfg *config.Git
 		false,                             // httpOnly
 	)
 
-	frontendRedirectURL := cfg.ClientEnd              // "http://localhost:8080/"   // Redirect to your frontend
-	c.Redirect(http.StatusFound, frontendRedirectURL) // Use c.Redirect
+	frontendRedirectURL := cfg.ClientEnd                                         // "http://localhost:8080/"   // Redirect to your frontend
+	c.Redirect(http.StatusFound, frontendRedirectURL+"redirect?token="+appToken) // Use c.Redirect
 
 	utils.LoggerRequest(map[string]interface{}{"user_id": userResponse.ID}, "GitHub Callback", fmt.Sprintf("Client user logged in/registered via GitHub: %s", userResponse.Username))
 }

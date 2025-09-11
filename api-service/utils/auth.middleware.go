@@ -143,7 +143,7 @@ func AuthMiddlewareWithWhiteList(whitelist map[string]bool) gin.HandlerFunc {
 			}
 
 			requestBody["companyId"] = storedUser.CompanyID
-			requestBody["userId"] = storedUser.ID
+			requestBody["userID"] = userID
 
 			updatedBodyBytes, err := json.Marshal(requestBody)
 			if err != nil {
